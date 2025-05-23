@@ -4,7 +4,7 @@ def compress_pdf(input_file, output_file, quality='screen'):
     # Qualidades possíveis: screen, ebook, printer, prepress, default
     try:
         subprocess.run([
-            'gswin64c',
+            'gswin64c', 
             '-sDEVICE=pdfwrite',
             '-dCompatibilityLevel=1.4',
             '-dPDFSETTINGS=/' + quality,
@@ -18,13 +18,7 @@ def compress_pdf(input_file, output_file, quality='screen'):
     except subprocess.CalledProcessError as e:
         print("Erro na compressão:", e)
 
-compress_pdf('pdfs_originais/teste 1.pdf', 'pdfs_compactados/teste 1 compactado.pdf', 'printer')
-
-## Qualidade de compactação:
-# /screen: baixa qualidade, tamanho pequeno 
-# /ebook: qualidade média, tamanho médio
-# /printer: qualidade alta, tamanho maior
-# /prepress: qualidade máxima, tamanho máximo
+compress_pdf('pdfs_originais/retinografia.pdf', 'versões_retinografia/retinografia_screen.pdf', quality='screen')
 
 ## Parâmtros adicionais:
 # -sDEVICE=pdfwrite → salvar como PDF.
@@ -32,3 +26,9 @@ compress_pdf('pdfs_originais/teste 1.pdf', 'pdfs_compactados/teste 1 compactado.
 # -dPDFSETTINGS=/screen → compactação máxima.
 # -sOutputFile="compactado.pdf" → nome do arquivo de saída.
 # "original.pdf" → arquivo original.
+
+## Parâmetros de compactação:
+# /screen: baixa qualidade, tamanho pequeno 
+# /ebook: qualidade média, tamanho médio
+# /printer: qualidade alta, tamanho maior
+# /prepress: qualidade máxima, tamanho máximo
