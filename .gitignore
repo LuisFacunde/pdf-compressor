@@ -1,6 +1,6 @@
 # Arquivos de entrada e saída de PDFs
-src/data/input/pdfs_originais/
-src/data/output/pdfs_compactados/
+src/data/input/
+src/data/output/
 
 # Arquivos temporários do Python
 __pycache__/
