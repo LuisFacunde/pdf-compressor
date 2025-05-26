@@ -7,10 +7,6 @@ def compress_pdf(
     output_path: Path,
     quality: str = "prepress"
 ) -> None:
-    """
-    Comprime um PDF usando Ghostscript.
-    quality: 'screen', 'ebook', 'printer', 'prepress' ou 'default'
-    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [

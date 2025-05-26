@@ -27,7 +27,8 @@ def main():
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for pdf in args.input_dir.glob("*.pdf"):
-        out = args.output_dir / f"{pdf.stem}_{args.quality}.pdf"
+        out = args.output_dir / f"{pdf.stem}_compress.pdf"
+        # out = args.output_dir / f"{pdf.stem}_{args.quality}.pdf"
         compress_pdf(pdf, out, quality=args.quality)
 
 if __name__ == "__main__":
