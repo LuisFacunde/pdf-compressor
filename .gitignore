@@ -1,0 +1,20 @@
+# Arquivos de entrada e saída de PDFs
+src/data/input/pdfs_originais/
+src/data/output/pdfs_compactados/
+
+# Arquivos temporários do Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Arquivos de ambiente virtual
+.venv/
+env/
+venv/
+
+# Arquivos de log
+*.log
+
+# Arquivos da IDEs
+.vscode/
+.idea/
