@@ -1,0 +1,12 @@
+# Arquivos de entrada e saída de PDFs
+src/data/input/
+src/data/output/
+
+# Arquivos temporários do Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Arquivos da IDEs
+.vscode/
+.idea/
