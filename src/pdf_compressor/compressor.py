@@ -1,17 +1,16 @@
+import shutil
 import subprocess
 from pathlib import Path
+from typing import List, Tuple
 from .config import GHOSTSCRIPT_CMD
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple
-import os
-import shutil
 
 def compress_pdf(
     input_path: Path,
     output_path: Path,
     quality: str = "prepress"
 ) -> Tuple[bool, str]:
-    # Verifica se vale a pena comprimir
+    
     input_size = input_path.stat().st_size
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
@@ -49,7 +48,7 @@ def compress_batch(
         input_files: List[Path], 
         output_dir: Path, 
         quality: str = "prepress", 
-        max_workers: int = 4
+        max_workers: int = 5
     ) -> None:
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
