@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 from .config import INPUT_DIR, OUTPUT_DIR
-from .compressor import compress_pdf, compress_batch
+from .compressor import compress_batch
 
 def main():
     parser = argparse.ArgumentParser(

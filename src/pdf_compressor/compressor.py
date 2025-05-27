@@ -4,6 +4,7 @@ from .config import GHOSTSCRIPT_CMD
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Tuple
 import os
+import shutil
 
 def compress_pdf(
     input_path: Path,
@@ -12,9 +13,6 @@ def compress_pdf(
 ) -> Tuple[bool, str]:
     # Verifica se vale a pena comprimir
     input_size = input_path.stat().st_size
-    if input_size < 1024 * 1024:  # Arquivos menores que 1MB
-        return False, "Arquivo muito pequeno para compressão"
-
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     cmd = [
@@ -34,13 +32,28 @@ def compress_pdf(
         # Verifica se houve redução real no tamanho
         output_size = output_path.stat().st_size
         if output_size >= input_size:
-            output_path.unlink()  # Remove arquivo de saída
-            return False, "Compressão não reduziu o tamanho"
+            output_path.unlink()  # Remove arquivo comprimido
+            # Copia o arquivo original para a pasta de saída
+            new_output_path = output_path.parent / f"{input_path.stem}_original.pdf"
+            shutil.copy2(input_path, new_output_path)
+            return False, f"Compressão não reduziu o tamanho - arquivo original copiado"
         return True, f"Redução: {((input_size - output_size) / input_size) * 100:.1f}%"
     except subprocess.CalledProcessError as e:
-        return False, str(e)
+        # Em caso de erro, tenta copiar o original
+        try:
+            new_output_path = output_path.parent / f"{input_path.stem}_original.pdf"
+            shutil.copy2(input_path, new_output_path)
+            return False, f"Erro na compressão: {e} - arquivo original copiado"
+        except Exception as copy_error:
+            return False, f"Erro na compressão e na cópia: {e}, {copy_error}"
 
-def compress_batch(input_files: List[Path], output_dir: Path, quality: str = "prepress", max_workers: int = 4) -> None:
+def compress_batch(
+        input_files: List[Path], 
+        output_dir: Path, 
+        quality: str = "prepress", 
+        max_workers: int = 4
+    ) -> None:
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for pdf in input_files:
