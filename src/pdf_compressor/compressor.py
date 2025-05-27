@@ -32,14 +32,12 @@ def compress_pdf(
         # Verifica se houve redução real no tamanho
         output_size = output_path.stat().st_size
         if output_size >= input_size:
-            output_path.unlink()  # Remove arquivo comprimido
-            # Copia o arquivo original para a pasta de saída
+            output_path.unlink()
             new_output_path = output_path.parent / f"{input_path.stem}_original.pdf"
             shutil.copy2(input_path, new_output_path)
             return False, f"Compressão não reduziu o tamanho - arquivo original copiado"
         return True, f"Redução: {((input_size - output_size) / input_size) * 100:.1f}%"
     except subprocess.CalledProcessError as e:
-        # Em caso de erro, tenta copiar o original
         try:
             new_output_path = output_path.parent / f"{input_path.stem}_original.pdf"
             shutil.copy2(input_path, new_output_path)
