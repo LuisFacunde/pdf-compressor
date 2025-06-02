@@ -38,18 +38,15 @@ pip install -r requirements.txt
 Crie um arquivo `.env` na raiz do projeto com as seguintes configurações:
 
 ```env
-# Configurações do servidor
 API_HOST=0.0.0.0
 API_PORT=8000
 API_WORKERS=1
 DEBUG=False
 
-# Configurações do compressor
 DEFAULT_QUALITY=prepress
-MIN_COMPRESSION_RATIO=0.2  # 20% de redução mínima
+MIN_COMPRESSION_RATIO=0.2
 ALLOWED_FILE_TYPES=[".pdf"]
 
-# Configurações de segurança
 API_KEY=  # Deixe em branco para desabilitar a autenticação
 ENABLE_CORS=True
 ALLOWED_ORIGINS=["*"]
