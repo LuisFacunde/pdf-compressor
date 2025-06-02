@@ -120,15 +120,12 @@ Comprime múltiplos arquivos PDF em lote.
 ```python
 import requests
 
-# Comprimir um único arquivo
 files = {'file': open('exemplo.pdf', 'rb')}
 response = requests.post('http://localhost:8000/compress/', files=files)
 
-# Ver a taxa de compressão
 compression_ratio = response.headers.get('X-Compression-Ratio')
 print(f'Taxa de compressão: {compression_ratio}')
 
-# Comprimir múltiplos arquivos
 files = [
     ('files', open('exemplo1.pdf', 'rb')),
     ('files', open('exemplo2.pdf', 'rb'))
@@ -139,13 +136,11 @@ results = response.json()
 
 ### cURL
 ```bash
-# Comprimir um único arquivo
 curl -X POST "http://localhost:8000/compress/" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@exemplo.pdf"
 
-# Comprimir múltiplos arquivos
 curl -X POST "http://localhost:8000/compress-batch/" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
