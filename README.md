@@ -25,7 +25,7 @@ API RESTful para compressão de arquivos PDF de exames médicos.
 
 1. Clone o repositório:
 ```bash
-git clone [seu-repositorio]
+git clone https://github.com/LuisFacunde/pdf-compressor.git
 cd pdf-compressor
 ```
 
