@@ -28,14 +28,16 @@ def compress_pdf(
 
     try:
         subprocess.run(cmd, check=True)
-        # Verifica se houve redução real no tamanho
         output_size = output_path.stat().st_size
-        if output_size >= input_size:
+        reduction_percentage = ((input_size - output_size) / input_size) * 100
+        
+        if output_size >= input_size or reduction_percentage < 20:
             output_path.unlink()
             new_output_path = output_path.parent / f"{input_path.stem}_original.pdf"
             shutil.copy2(input_path, new_output_path)
-            return False, f"Compressão não reduziu o tamanho - arquivo original copiado"
-        return True, f"Redução: {((input_size - output_size) / input_size) * 100:.1f}%"
+            msg = "Compressão não reduziu o tamanho" if output_size >= input_size else "Redução menor que 20%"
+            return False, f"{msg} - arquivo original copiado"
+        return True, f"Redução: {reduction_percentage:.1f}%"
     except subprocess.CalledProcessError as e:
         try:
             new_output_path = output_path.parent / f"{input_path.stem}_original.pdf"
