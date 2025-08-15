@@ -5,7 +5,7 @@ from .config import INPUT_DIR, OUTPUT_DIR
 from .compressor import compress_pdf, compress_pdf_batch
 
 def validate_directory(path: Path, create_if_missing: bool = False) -> bool:
-    """Validate directory exists or can be created."""
+    # Valida a existencia dos diretórios
     if path.exists():
         if not path.is_dir():
             print(f"Error: {path} exists but is not a directory")
@@ -93,7 +93,7 @@ Exemplos de uso:
         import logging
         logging.getLogger().setLevel(logging.DEBUG)
     
-    # Handle single file processing
+    # Handle para processamento individual de arquivo
     if args.single:
         input_file = Path(args.single[0])
         output_file = Path(args.single[1])
@@ -113,7 +113,6 @@ Exemplos de uso:
             print(f"❌ Falha na compressão: {error}")
             return 1
     
-    # Handle batch processing
     else:
         # Validação do diretório de entrada
         if not validate_directory(args.input_dir, create_if_missing=False):

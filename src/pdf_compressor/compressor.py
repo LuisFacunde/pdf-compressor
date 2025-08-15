@@ -9,7 +9,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('pdf_compression.log'),
+        logging.FileHandler('../logs/pdf_compression.log'),
         logging.StreamHandler()
     ]
 )
@@ -66,7 +66,8 @@ def compress_pdf(
     Returns:
         Tuple of (success: bool, error_message: Optional[str])
     """
-    # Validation checks
+    
+    # Validações
     if not input_path.exists():
         error_msg = f"Input file does not exist: {input_path}"
         logger.error(error_msg)
@@ -116,7 +117,7 @@ def compress_pdf(
             capture_output=True, 
             text=True, 
             check=True,
-            timeout=300  # 5 minutos de timeout
+            timeout=300
         )
         
         # Verifica se o arquivo de saída foi criado
@@ -174,13 +175,13 @@ class ThreadSafeCounter:
 
 def compress_single_file_wrapper(args):
     """
-    Wrapper function for parallel processing.
+    Função wrapper para processamento paralelo.
     
     Args:
-        args: Tuple of (pdf_file, output_file, quality, overwrite)
+        args: Tupla de (pdf_file, output_file, quality, overwrite)
     
     Returns:
-        dict with compression results
+        dict com resultados de compressão
     """
     pdf_file, output_file, quality, overwrite = args
     
@@ -206,35 +207,37 @@ def compress_pdf_batch(
     show_progress: bool = True
 ) -> Tuple[int, int]:
     """
-    Compress all PDF files in a directory using parallel processing.
+    Compacte todos os arquivos PDF em um diretório usando processamento paralelo.
     
     Args:
-        input_dir: Directory containing input PDF files
-        output_dir: Directory for compressed PDF files
-        quality: Compression quality level
-        overwrite: Whether to overwrite existing output files
-        max_workers: Maximum number of parallel workers (None = auto-detect)
-        show_progress: Whether to show progress bar
+        input_dir: Diretório contendo arquivos PDF de entrada
+        output_dir: Diretório para arquivos PDF compactados
+        quality: Nível de qualidade de compressão
+        overwrite: Se deve sobrescrever arquivos de saída existentes
+        max_workers: Número máximo de trabalhadores paralelos (Nenhum = detecção automática)
+        show_progress: Se deve mostrar a barra de progresso
     
-    Returns:
-        Tuple of (successful_compressions, failed_compressions)
+    Return:
+        Tupla de (compressões_bem-sucedidas, compressões_falhadas)
     """
+    
+
     pdf_files = list(input_dir.glob("*.pdf"))
     
     if not pdf_files:
         logger.warning(f"No PDF files found in {input_dir}")
         return 0, 0
     
-    # Auto-detect optimal number of workers based on CPU cores and file count
+    # Detecta automaticamente o número de Workers baseado nos Cores da CPU
     if max_workers is None:
         import os
         cpu_count = os.cpu_count() or 2
-        # Use at most 4 workers to avoid overwhelming the system
+        # Usa no máximo 4 trabalhadores para evitar sobrecarregar o sistema
         max_workers = min(4, cpu_count, len(pdf_files))
     
     logger.info(f"Found {len(pdf_files)} PDF files to compress using {max_workers} parallel workers")
     
-    # Prepare arguments for parallel processing
+    # Preparar args para processamento paralelo
     compression_args = []
     for pdf_file in pdf_files:
         output_file = output_dir / f"{pdf_file.stem}_compress.pdf"
@@ -246,7 +249,7 @@ def compress_pdf_batch(
     total_compressed_size = 0
     failed_files = []
     
-    # Progress bar setup
+    # Barra de progresso
     progress_bar = None
     if show_progress:
         try:
@@ -260,16 +263,16 @@ def compress_pdf_batch(
             logger.warning("tqdm not installed. Install with 'pip install tqdm' for progress bars.")
             show_progress = False
     
-    # Execute compression in parallel
+    # Executa compressão em Paralelo
     try:
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all compression tasks
+            # Envie todas as tarefas de compactação
             future_to_args = {
                 executor.submit(compress_single_file_wrapper, args): args 
                 for args in compression_args
             }
             
-            # Process completed tasks
+            # Processar tarefas concluídas
             for future in concurrent.futures.as_completed(future_to_args):
                 args = future_to_args[future]
                 pdf_file = args[0]
@@ -277,7 +280,7 @@ def compress_pdf_batch(
                 try:
                     result = future.result()
                     
-                    # Update counters
+                    # Atualizar contadores
                     total_original_size += result['original_size']
                     
                     if result['success']:
@@ -291,7 +294,7 @@ def compress_pdf_batch(
                         })
                         logger.error(f"Failed to compress {result['file_name']}: {result['error']}")
                     
-                    # Update progress bar
+                   # Atualizar barra de progresso
                     if show_progress and progress_bar:
                         progress_bar.update(1)
                         
@@ -311,7 +314,7 @@ def compress_pdf_batch(
         if show_progress and progress_bar:
             progress_bar.close()
     
-    # Log batch summary
+    # Resumo do Log batch
     logger.info(f"Parallel compression completed in batch")
     
     if successful > 0:
@@ -329,7 +332,7 @@ def compress_pdf_batch(
             f"⚡ Processed {len(pdf_files)} files using {max_workers} parallel workers"
         )
     
-    # Log failed files details if any
+    # Registro de detalhes de arquivos com falha, se houver
     if failed_files:
         logger.warning(f"❌ {len(failed_files)} files failed to compress:")
         for failed_file in failed_files[:5]:  # Show first 5 failures
