@@ -82,8 +82,9 @@ Este sistema foi desenvolvido especificamente para otimizar o armazenamento de e
 
 1. **Clone o repositório:**
    ```bash
-   git clone <url-do-repositório>
+   git clone https://github.com/LuisFacunde/pdf-compressor.git
    cd compressor-pdfs
+   cd src
    ```
 
 2. **Crie um ambiente virtual (recomendado):**
@@ -149,9 +150,9 @@ python -m pdf_compressor --help
 | Qualidade | DPI | Compressão | Tamanho Final | Uso Recomendado |
 |-----------|-----|------------|---------------|-----------------|
 | `screen` | 72 | **Máxima** | **Menor** | Visualização rápida, rascunhos |
-| `ebook` | 150 | **Alta** | **Pequeno** | ⭐ **Recomendado para exames médicos** |
+| `ebook` | 150 | **Alta** | **Pequeno** | ⭐ **Recomendado para exames médicos com gráficos e texto** |
 | `printer` | 300 | Média | Médio | Impressão de qualidade |
-| `prepress` | 300+ | **Baixa** | **Maior** | Arquivamento profissional |
+| `prepress` | 300+ | **Baixa** | **Maior** | ⭐ **Recomendado para exames médicos com imagem detalhadas** |
 | `default` | Variável | Automática | Variável | Configuração padrão do Ghostscript |
 
 ### 💡 Recomendação para Uso Médico
@@ -209,5 +210,3 @@ O sistema gera logs detalhados em duas saídas:
 2024-01-15 14:30:18 - INFO - [✔] retinografia.pdf → retinografia_compress.pdf (2.5MB → 890KB, 64.4% reduction)
 2024-01-15 14:30:20 - INFO - Batch compression complete: 5 successful, 0 failed. Overall space savings: 8.2MB (58.3% reduction)
 ```
-
-## 💡 Exemplos
