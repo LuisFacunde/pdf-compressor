@@ -1,0 +1,10 @@
+# Dependências básicas para testes
+pytest>=7.0.0
+
+# Dependências opcionais para melhor experiência do usuário
+tqdm>=4.64.0  # Barras de progresso para processamento em lote
+
+# Dependências para desenvolvimento (opcionais)
+pytest-cov>=4.0.0  # Cobertura de testes
+black>=22.0.0       # Formatação de código
+flake8>=4.0.0       # Linting de código

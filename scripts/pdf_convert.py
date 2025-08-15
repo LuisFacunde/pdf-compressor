@@ -1,7 +1,6 @@
 import subprocess
 
-def compress_pdf(input_file, output_file, quality='screen'):
-    # Qualidades possíveis: screen, ebook, printer, prepress, default
+def compress_pdf(input_file, output_file, quality='prepress'):
     try:
         subprocess.run([
             'gswin64c', 
@@ -20,14 +19,14 @@ def compress_pdf(input_file, output_file, quality='screen'):
 
 compress_pdf('pdfs_originais/Retinografia.pdf', 'pdfs_compactados/Retinografia_default.pdf', quality='default')
 
-## Parâmtros adicionais:
+### Parâmtros adicionais:
 # -sDEVICE=pdfwrite → salvar como PDF.
 # -dCompatibilityLevel=1.4 → compatível com versões antigas.
 # -dPDFSETTINGS=/screen → compactação máxima.
 # -sOutputFile="compactado.pdf" → nome do arquivo de saída.
 # "original.pdf" → arquivo original.
-
-## Parâmetros de compactação:
+ 
+### Qualidade de compactação:
 # /screen: baixa qualidade, tamanho pequeno 
 # /ebook: qualidade média, tamanho médio
 # /printer: qualidade alta, tamanho maior
