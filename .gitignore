@@ -19,3 +19,5 @@ venv/
 .vscode/
 .idea/
 
+# Arquivos de Scripts
+.scripts/
