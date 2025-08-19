@@ -2,19 +2,6 @@
 
 Aplicação desenvolvida para comprimir arquivos PDF de exames médicos visando poupar espaço de armazenamento nos servidores da **Fundação Altino Ventura**.
 
-## 📋 Índice
-
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Funcionalidades](#funcionalidades)
-- [Instalação](#instalação)
-- [Como Usar](#como-usar)
-- [Níveis de Qualidade](#níveis-de-qualidade)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Logs e Monitoramento](#logs-e-monitoramento)
-- [Exemplos](#exemplos)
-- [Contribuição](#contribuição)
-- [Licença](#licença)
-
 ## 🏥 Sobre o Projeto
 
 Este sistema foi desenvolvido especificamente para otimizar o armazenamento de exames médicos digitais na Fundação Altino Ventura. A ferramenta utiliza o Ghostscript para comprimir PDFs mantendo a qualidade necessária para diagnósticos médicos.
