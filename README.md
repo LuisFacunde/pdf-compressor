@@ -1,4 +1,4 @@
-# Compressor de PDFs Médicos
+# Compressor de PDFs de Exames Médicos
 
 Aplicação desenvolvida para comprimir arquivos PDF de exames médicos visando poupar espaço de armazenamento nos servidores da **Fundação Altino Ventura**.
 
@@ -136,17 +136,17 @@ python -m pdf_compressor --help
 | Qualidade | DPI | Compressão | Tamanho Final | Uso Recomendado |
 |-----------|-----|------------|---------------|-----------------|
 | `screen` | 72 | **Máxima** | **Menor** | Visualização rápida, rascunhos |
-| `ebook` | 150 | **Alta** | **Pequeno** | ⭐ **Recomendado para exames médicos** |
+| `ebook` | 150 | **Alta** | **Pequeno** | Compartilhamento rápido para texto |
 | `printer` | 300 | Média | Médio | Impressão de qualidade |
-| `prepress` | 300+ | **Baixa** | **Maior** | Arquivamento profissional |
+| `prepress` | 300+ | **Baixa** | **Maior** | ⭐ **Recomendado para exames médicos** |
 | `default` | Variável | Automática | Variável | Configuração padrão do Ghostscript |
 
 ### 💡 Recomendação para Uso Médico
 
-Para exames médicos, recomendamos o nível **`ebook`** que oferece:
-- ✅ Boa compressão (economia significativa de espaço)
+Para exames médicos, recomendamos o nível **`prepress`** que oferece:
+- ✅ Boa compressão (economia de espaço)
 - ✅ Qualidade suficiente para diagnóstico
-- ✅ Carregamento rápido nos sistemas hospitalares
+- ✅ Carregamento mais rápido nos sistemas hospitalares
 - ✅ Compatibilidade com impressoras médicas
 
 ## 📁 Estrutura do Projeto
@@ -196,5 +196,3 @@ O sistema gera logs detalhados em duas saídas:
 2024-01-15 14:30:18 - INFO - [✔] retinografia.pdf → retinografia_compress.pdf (2.5MB → 890KB, 64.4% reduction)
 2024-01-15 14:30:20 - INFO - Batch compression complete: 5 successful, 0 failed. Overall space savings: 8.2MB (58.3% reduction)
 ```
-
-## 💡 Exemplos
