@@ -71,6 +71,7 @@ Este sistema foi desenvolvido especificamente para otimizar o armazenamento de e
    ```bash
    git clone https://github.com/LuisFacunde/pdf-compressor.git
    cd compressor-pdfs
+   cd src
    ```
 
 2. **Crie um ambiente virtual (recomendado):**
