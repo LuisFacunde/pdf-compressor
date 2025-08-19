@@ -69,7 +69,7 @@ Este sistema foi desenvolvido especificamente para otimizar o armazenamento de e
 
 1. **Clone o repositório:**
    ```bash
-   git clone <url-do-repositório>
+   git clone https://github.com/LuisFacunde/pdf-compressor.git
    cd compressor-pdfs
    ```
 
