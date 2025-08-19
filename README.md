@@ -40,14 +40,14 @@ Este sistema foi desenvolvido especificamente para otimizar o armazenamento de e
 
 1. **Python 3.7+**
    ```bash
-   python --version  # Verificar versão
+   python --version  # Verifica versão do python instalado
    ```
 
 2. **Ghostscript**
    
    **Windows:**
    - Baixe em: https://www.ghostscript.com/download/gsdnld.html
-   - Instale a versão 64-bit se possível
+   - Instale a versão 64/32 bits conforme o seu sistema
    
    **Linux (Ubuntu/Debian):**
    ```bash
