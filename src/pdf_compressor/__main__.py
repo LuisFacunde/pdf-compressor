@@ -5,7 +5,6 @@ from .config import INPUT_DIR, OUTPUT_DIR
 from .compressor import compress_pdf, compress_pdf_batch
 
 def validate_directory(path: Path, create_if_missing: bool = False) -> bool:
-    # Valida a existencia dos diretórios
     if path.exists():
         if not path.is_dir():
             print(f"Error: {path} exists but is not a directory")
@@ -37,7 +36,6 @@ Exemplos de uso:
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
-    # Grupos para processamento paralelo de arquivos
     batch_group = parser.add_argument_group('processamento em lote')
     batch_group.add_argument(
         "-i", "--input-dir",
@@ -50,7 +48,6 @@ Exemplos de uso:
         help=f"pasta de saída para PDFs comprimidos (padrão: {OUTPUT_DIR})"
     )
     
-    # Grupo para processamento individual de arquivo
     single_group = parser.add_argument_group('arquivo único')
     single_group.add_argument(
         "--single", nargs=2, metavar=('INPUT', 'OUTPUT'),
@@ -114,11 +111,9 @@ Exemplos de uso:
             return 1
     
     else:
-        # Validação do diretório de entrada
         if not validate_directory(args.input_dir, create_if_missing=False):
             return 1
         
-        # Valida/Cria diretório de saída
         if not validate_directory(args.output_dir, create_if_missing=True):
             return 1
         
@@ -126,7 +121,6 @@ Exemplos de uso:
         print(f"📁 Pasta de saída: {args.output_dir}")
         print(f"🎛️  Qualidade: {args.quality}")
         
-        # Mostra informações de processamento paralelo
         if args.jobs:
             print(f"⚡ Processadores: {args.jobs}")
         else:

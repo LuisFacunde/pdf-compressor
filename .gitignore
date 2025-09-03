@@ -1,6 +1,5 @@
 # Arquivos de entrada e saída de PDFs
-src/data/input/
-src/data/output/
+*.pdf
 
 # Arquivos temporários do Python
 __pycache__/
@@ -18,6 +17,3 @@ venv/
 # Arquivos da IDEs
 .vscode/
 .idea/
-
-# Arquivos de Scripts
-.scripts/

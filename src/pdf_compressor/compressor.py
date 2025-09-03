@@ -1,6 +1,9 @@
+import os
 import subprocess
 import logging
-import os
+import threading
+import concurrent.futures
+from tqdm import tqdm
 from pathlib import Path
 from typing import Optional, Tuple
 from .config import GHOSTSCRIPT_CMD
@@ -15,12 +18,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def get_file_size(file_path: Path) -> int:
-    # Paga o tamanho do arquivo em Bytes
+def get_file_size(file_path: Path) -> int: # Paga o tamanho do arquivo em Bytes
     return file_path.stat().st_size if file_path.exists() else 0
 
-def format_file_size(size_bytes: int) -> str:
-    # Converte bytes para um formato mais legível;
+def format_file_size(size_bytes: int) -> str: # Converte bytes para um formato mais legível
     if size_bytes == 0:
         return "0B"
     size_names = ["B", "KB", "MB", "GB"]
@@ -30,14 +31,12 @@ def format_file_size(size_bytes: int) -> str:
         i += 1
     return f"{size_bytes:.2f}{size_names[i]}"
 
-def calculate_compression_ratio(original_size: int, compressed_size: int) -> float:
-    # Calcular a porcentagem de compressão.
+def calculate_compression_ratio(original_size: int, compressed_size: int) -> float: # Calcular a porcentagem de compressão.
     if original_size == 0:
         return 0.0
     return ((original_size - compressed_size) / original_size) * 100
 
-def check_ghostscript_available() -> bool:
-    # Checa se o Ghostspirit está instalado no sistema.
+def check_ghostscript_available() -> bool: # Checa se o Ghostspirit está instalado no sistema.
     try:
         subprocess.run(
             [GHOSTSCRIPT_CMD, "--version"], 
@@ -54,20 +53,7 @@ def compress_pdf(
     quality: str = "prepress",
     overwrite: bool = False
 ) -> Tuple[bool, Optional[str]]:
-    """
-    Compress a PDF file using Ghostscript.
-    
-    Args:
-        input_path: Path to input PDF
-        output_path: Path for compressed PDF
-        quality: Compression quality level
-        overwrite: Whether to overwrite existing output files
-    
-    Returns:
-        Tuple of (success: bool, error_message: Optional[str])
-    """
-    
-    # Validações
+
     if not input_path.exists():
         error_msg = f"Input file does not exist: {input_path}"
         logger.error(error_msg)
@@ -88,13 +74,10 @@ def compress_pdf(
         logger.error(error_msg)
         return False, error_msg
     
-    # Criar diretório de saída
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Pega o tamanho original do arquivo
     original_size = get_file_size(input_path)
     
-    # Perapra comando Ghostscript
     cmd = [
         GHOSTSCRIPT_CMD,
         "-sDEVICE=pdfwrite",
@@ -103,7 +86,7 @@ def compress_pdf(
         "-dNOPAUSE",
         "-dQUIET",
         "-dBATCH",
-        "-dSAFER",  # Security enhancement
+        "-dSAFER",
         f"-sOutputFile={output_path}",
         str(input_path),
     ]
@@ -154,11 +137,6 @@ def compress_pdf(
         logger.error(error_msg)
         return False, error_msg
 
-import concurrent.futures
-import threading
-from tqdm import tqdm
-
-# Contador de Threads para processos em paralelo
 class ThreadSafeCounter:
     def __init__(self):
         self._value = 0
@@ -174,15 +152,7 @@ class ThreadSafeCounter:
             return self._value
 
 def compress_single_file_wrapper(args):
-    """
-    Função wrapper para processamento paralelo.
-    
-    Args:
-        args: Tupla de (pdf_file, output_file, quality, overwrite)
-    
-    Returns:
-        dict com resultados de compressão
-    """
+
     pdf_file, output_file, quality, overwrite = args
     
     original_size = get_file_size(pdf_file)
@@ -206,21 +176,6 @@ def compress_pdf_batch(
     max_workers: int = None,
     show_progress: bool = True
 ) -> Tuple[int, int]:
-    """
-    Compacte todos os arquivos PDF em um diretório usando processamento paralelo.
-    
-    Args:
-        input_dir: Diretório contendo arquivos PDF de entrada
-        output_dir: Diretório para arquivos PDF compactados
-        quality: Nível de qualidade de compressão
-        overwrite: Se deve sobrescrever arquivos de saída existentes
-        max_workers: Número máximo de trabalhadores paralelos (Nenhum = detecção automática)
-        show_progress: Se deve mostrar a barra de progresso
-    
-    Return:
-        Tupla de (compressões_bem-sucedidas, compressões_falhadas)
-    """
-    
 
     pdf_files = list(input_dir.glob("*.pdf"))
     
@@ -228,12 +183,10 @@ def compress_pdf_batch(
         logger.warning(f"No PDF files found in {input_dir}")
         return 0, 0
     
-    # Detecta automaticamente o número de Workers baseado nos Cores da CPU
     if max_workers is None:
         import os
         cpu_count = os.cpu_count() or 2
-        # Usa no máximo 4 trabalhadores para evitar sobrecarregar o sistema
-        max_workers = min(4, cpu_count, len(pdf_files))
+        max_workers = min(4, cpu_count, len(pdf_files)) # Usa no máximo 4 trabalhadores para evitar sobrecarregar o sistema
     
     logger.info(f"Found {len(pdf_files)} PDF files to compress using {max_workers} parallel workers")
     
@@ -249,7 +202,6 @@ def compress_pdf_batch(
     total_compressed_size = 0
     failed_files = []
     
-    # Barra de progresso
     progress_bar = None
     if show_progress:
         try:
@@ -314,7 +266,6 @@ def compress_pdf_batch(
         if show_progress and progress_bar:
             progress_bar.close()
     
-    # Resumo do Log batch
     logger.info(f"Parallel compression completed in batch")
     
     if successful > 0:
@@ -332,7 +283,6 @@ def compress_pdf_batch(
             f"⚡ Processed {len(pdf_files)} files using {max_workers} parallel workers"
         )
     
-    # Registro de detalhes de arquivos com falha, se houver
     if failed_files:
         logger.warning(f"❌ {len(failed_files)} files failed to compress:")
         for failed_file in failed_files[:5]:  # Show first 5 failures
