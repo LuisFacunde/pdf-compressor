@@ -2,7 +2,7 @@
 
 Aplicação desenvolvida para comprimir arquivos PDF de exames médicos visando poupar espaço de armazenamento nos servidores da **Fundação Altino Ventura**.
 
-## 📋 Índice
+## Índice
 
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Funcionalidades](#funcionalidades)
@@ -15,20 +15,20 @@ Aplicação desenvolvida para comprimir arquivos PDF de exames médicos visando 
 - [Contribuição](#contribuição)
 - [Licença](#licença)
 
-## 🏥 Sobre o Projeto
+## Sobre o Projeto
 
 Este sistema foi desenvolvido especificamente para otimizar o armazenamento de exames médicos digitais na Fundação Altino Ventura. A ferramenta utiliza o Ghostscript para comprimir PDFs mantendo a qualidade necessária para diagnósticos médicos.
 
-### 🎯 Objetivos
+### Objetivos
 
 - **Economia de Espaço**: Reduzir significativamente o tamanho dos arquivos PDF
 - **Preservação da Qualidade**: Manter a qualidade diagnóstica dos exames
 - **Automação**: Processamento em lote para grandes volumes de arquivos
 - **Confiabilidade**: Sistema robusto com logs detalhados e tratamento de erros
 
-## ⚡ Funcionalidades
+## Funcionalidades
 
-### ✨ Principais Recursos
+### Principais Recursos
 
 - **Compressão em Lote**: Processa múltiplos PDFs automaticamente
 - **Compressão Individual**: Comprime arquivos únicos quando necessário
@@ -39,7 +39,7 @@ Este sistema foi desenvolvido especificamente para otimizar o armazenamento de e
 - **Interface CLI Amigável**: Comandos simples e intuitivos
 - **Validação Robusta**: Verifica integridade dos arquivos antes e após compressão
 
-### 🔧 Funcionalidades Técnicas
+### Funcionalidades Técnicas
 
 - Detecção automática do Ghostscript
 - Timeout para compressões longas
@@ -47,7 +47,7 @@ Este sistema foi desenvolvido especificamente para otimizar o armazenamento de e
 - Preservação de metadados dos PDFs
 - Tratamento de erros abrangente
 
-## 🚀 Instalação
+## Instalação
 
 ### Pré-requisitos
 
@@ -107,7 +107,7 @@ Este sistema foi desenvolvido especificamente para otimizar o armazenamento de e
    python -m pdf_compressor --help
    ```
 
-## 📖 Como Usar
+## Como Usar
 
 ### Uso Básico
 
@@ -144,23 +144,23 @@ python -m pdf_compressor -i ./exames -o ./comprimidos -q ebook -v --overwrite
 python -m pdf_compressor --help
 ```
 
-## 🎛️ Níveis de Qualidade
+## Níveis de Qualidade
 
 | Qualidade | DPI | Compressão | Tamanho Final | Uso Recomendado |
 |-----------|-----|------------|---------------|-----------------|
 | `screen` | 72 | **Máxima** | **Menor** | Visualização rápida, rascunhos |
-| `ebook` | 150 | **Alta** | **Pequeno** | ⭐ **Recomendado para exames médicos** |
+| `ebook` | 150 | **Alta** | **Pequeno** | Visualização mais adequanda para web |
 | `printer` | 300 | Média | Médio | Impressão de qualidade |
 | `prepress` | 300+ | **Baixa** | **Maior** | Arquivamento profissional |
 | `default` | Variável | Automática | Variável | Configuração padrão do Ghostscript |
 
-### 💡 Recomendação para Uso Médico
+### Recomendação para Uso Médico
 
-Para exames médicos, recomendamos o nível **`ebook`** que oferece:
-- ✅ Boa compressão (economia significativa de espaço)
-- ✅ Qualidade suficiente para diagnóstico
-- ✅ Carregamento rápido nos sistemas hospitalares
-- ✅ Compatibilidade com impressoras médicas
+Para exames médicos, recomendamos o nível **`prepress`** que oferece:
+- Boa compressão (economia significativa de espaço)
+- Qualidade suficiente para diagnóstico
+- Carregamento rápido nos sistemas hospitalares
+- Compatibilidade com impressoras médicas
 
 ## 📁 Estrutura do Projeto
 
@@ -174,12 +174,12 @@ compressor-pdfs/
 │   │   └── config.py           # Configurações do sistema
 │   └── data/
 │       ├── input/
-│       │   └── pdfs_originais/  # 📥 Coloque seus PDFs aqui
+│       │   └── pdfs_originais/  # Coloque seus PDFs aqui
 │       └── output/
-│           └── pdfs_compactados/ # 📤 PDFs comprimidos ficam aqui
+│           └── pdfs_compactados/ # PDFs comprimidos ficam aqui
 ├── tests/
 │   └── test_compressor.py       # Testes automatizados
-├── logs/                        # 📋 Arquivos de log
+├── logs/                        # Arquivos de log
 ├── scripts/                     # Scripts de exemplo/desenvolvimento
 ├── .gitignore
 ├── README.md
