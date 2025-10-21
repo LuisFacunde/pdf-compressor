@@ -209,5 +209,3 @@ O sistema gera logs detalhados em duas saídas:
 2024-01-15 14:30:18 - INFO - [✔] retinografia.pdf → retinografia_compress.pdf (2.5MB → 890KB, 64.4% reduction)
 2024-01-15 14:30:20 - INFO - Batch compression complete: 5 successful, 0 failed. Overall space savings: 8.2MB (58.3% reduction)
 ```
-
-## 💡 Exemplos
