@@ -162,7 +162,7 @@ Para exames médicos, recomendamos o nível **`prepress`** que oferece:
 - Carregamento rápido nos sistemas hospitalares
 - Compatibilidade com impressoras médicas
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 compressor-pdfs/
@@ -186,7 +186,7 @@ compressor-pdfs/
 └── requirements.txt
 ```
 
-## 📊 Logs e Monitoramento
+## Logs e Monitoramento
 
 ### Sistema de Logs
 
