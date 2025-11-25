@@ -6,13 +6,13 @@ import concurrent.futures
 from tqdm import tqdm
 from pathlib import Path
 from typing import Optional, Tuple
-from .config import GHOSTSCRIPT_CMD
+from .config import GHOSTSCRIPT_CMD, LOG_FILE
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("../logs/pdf_compression.log"),
+        logging.FileHandler(LOG_FILE),
         logging.StreamHandler(),
     ],
 )

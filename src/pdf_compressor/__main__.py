@@ -1,8 +1,9 @@
 import sys
 import argparse
 from pathlib import Path
-from .config import INPUT_DIR, OUTPUT_DIR
-from .compressor import compress_pdf, compress_pdf_batch
+
+from pdf_compressor.config import INPUT_DIR, OUTPUT_DIR
+from pdf_compressor.compressor import compress_pdf, compress_pdf_batch
 
 
 def validate_directory(path: Path, create_if_missing: bool = False) -> bool:

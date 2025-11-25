@@ -144,6 +144,28 @@ python -m pdf_compressor -i ./exames -o ./comprimidos -q ebook -v --overwrite
 python -m pdf_compressor --help
 ```
 
+## Criar Executável Standalone
+
+1. **Instale as dependências (inclui PyInstaller):**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Gere o binário:**
+   ```bash
+   pyinstaller --onefile --name pdf-compressor --paths src src/pdf_compressor/__main__.py
+   ```
+   O executável será criado em `dist/pdf-compressor(.exe)`.
+
+3. **Execute especificando as pastas e, se desejar, sobrescrevendo os originais:**
+   ```bash
+   pdf-compressor.exe --input-dir "C:\exames" --output-dir "C:\exames\compactados"
+   pdf-compressor.exe --input-dir "C:\exames" --in-place          # sobrescreve
+   ```
+
+> O executável aceita exatamente os mesmos argumentos do comando `python -m pdf_compressor`.  
+> No modo `--in-place`, os arquivos são processados recursivamente e substituídos apenas após uma compressão bem-sucedida.
+
 ## Níveis de Qualidade
 
 | Qualidade | DPI | Compressão | Tamanho Final | Uso Recomendado |
