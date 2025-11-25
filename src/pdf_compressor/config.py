@@ -5,12 +5,7 @@ from pathlib import Path
 
 
 def _get_base_dir() -> Path:
-    """
-    Resolve o diretório-base em tempo de execução.
-    Se estiver empacotado (PyInstaller), utiliza a pasta do executável.
-    Caso contrário, considera a raiz do repositório.
-    """
-    if getattr(sys, "frozen", False):  # Executável PyInstaller
+    if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent.parent.parent
 
@@ -19,10 +14,6 @@ BASE_DIR = _get_base_dir()
 
 
 def _resolve_data_dir() -> Path:
-    """
-    Procura primeiro por src/data (layout de desenvolvimento) e,
-    caso não exista, usa um diretório data/ ao lado do executável.
-    """
     dev_data = BASE_DIR / "src" / "data"
     if dev_data.exists():
         return dev_data
@@ -40,28 +31,25 @@ OUTPUT_DIR.parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_ghostscript_command():
-    system = platform.system().lower()
+    if getattr(sys, "frozen", False):
+        bundled_gs = os.path.join(sys._MEIPASS, "gswin64c.exe")
+        if os.path.exists(bundled_gs):
+            return bundled_gs
 
+    system = platform.system().lower()
     if system == "windows":
-        candidates = [
-            "gswin64c",
-            "gswin32c",
-            "gs",
-        ]
-    elif system == "darwin":
-        candidates = ["gs"]
+        candidates = ["gswin64c", "gswin32c", "gs"]
     else:
         candidates = ["gs"]
 
     for cmd in candidates:
         try:
             import subprocess
-
             subprocess.run([cmd, "--version"], capture_output=True, check=True)
             return cmd
         except (subprocess.CalledProcessError, FileNotFoundError):
             continue
-
+    
     return candidates[0]
 
 

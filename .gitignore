@@ -17,3 +17,10 @@ venv/
 # Arquivos da IDEs
 .vscode/
 .idea/
+
+# PyInstaller e Executáveis
+build/
+dist/
+*.spec
+*.exe
+gswin64c.exe

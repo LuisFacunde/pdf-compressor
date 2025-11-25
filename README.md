@@ -153,7 +153,7 @@ python -m pdf_compressor --help
 
 2. **Gere o binário:**
    ```bash
-   pyinstaller --onefile --name pdf-compressor --paths src src/pdf_compressor/__main__.py
+   python -m PyInstaller --onefile --name "Compressor-PDFs-FAV" --add-binary "gswin64c.exe;." --paths src src/pdf_compressor/interativo.py
    ```
    O executável será criado em `dist/pdf-compressor(.exe)`.
 
