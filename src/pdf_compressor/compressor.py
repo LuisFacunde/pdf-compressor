@@ -19,13 +19,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_file_size(file_path: Path) -> int:  # Paga o tamanho do arquivo em Bytes
+def get_file_size(file_path: Path) -> int:
     return file_path.stat().st_size if file_path.exists() else 0
 
 
 def format_file_size(
     size_bytes: int,
-) -> str:  # Converte bytes para um formato mais legível
+) -> str:
     if size_bytes == 0:
         return "0B"
     size_names = ["B", "KB", "MB", "GB"]
@@ -36,17 +36,13 @@ def format_file_size(
     return f"{size_bytes:.2f}{size_names[i]}"
 
 
-def calculate_compression_ratio(
-    original_size: int, compressed_size: int
-) -> float:  # Calcular a porcentagem de compressão.
+def calculate_compression_ratio(original_size: int, compressed_size: int) -> float:
     if original_size == 0:
         return 0.0
     return ((original_size - compressed_size) / original_size) * 100
 
 
-def check_ghostscript_available() -> (
-    bool
-):  # Checa se o Ghostspirit está instalado no sistema.
+def check_ghostscript_available() -> bool:
     try:
         subprocess.run([GHOSTSCRIPT_CMD, "--version"], capture_output=True, check=True)
         return True
@@ -167,10 +163,10 @@ def compress_single_file_wrapper(args):
         )
 
         if success:
-            if get_file_size(temp_output_file) > 1024:  # Mínimo de 1KB para ser válido
+            if get_file_size(temp_output_file) > 1024:
                 try:
-                    pdf_file.unlink()  # Remove o original
-                    temp_output_file.rename(pdf_file)  # Renomeia o temporário
+                    pdf_file.unlink()
+                    temp_output_file.rename(pdf_file)
                     final_output_path = pdf_file
                 except Exception as e:
                     success = False
@@ -210,13 +206,11 @@ def compress_pdf_batch(
 ) -> Tuple[int, int]:
 
     if in_place:
-        # Busca recursiva com rglob()
         logger.info(
             f"Modo 'in-place' ativado. Procurando PDFs recursivamente em {input_dir}"
         )
         pdf_files = list(input_dir.rglob("*.pdf"))
     else:
-        # Busca não recursiva
         pdf_files = list(input_dir.glob("*.pdf"))
 
     if not pdf_files:
@@ -226,14 +220,13 @@ def compress_pdf_batch(
     if max_workers is None:
         import os
 
-        cpu_count = os.cpu_count() or 2
-        max_workers = min(6, cpu_count, len(pdf_files))
+        cpu_count = os.cpu_count() or 4
+        max_workers = min(12, cpu_count, len(pdf_files))
 
     logger.info(
         f"Found {len(pdf_files)} PDF files to compress using {max_workers} parallel workers"
     )
 
-    # Preparar args para processamento paralelo
     compression_args = []
     for pdf_file in pdf_files:
         compression_args.append((pdf_file, output_dir, quality, overwrite, in_place))
