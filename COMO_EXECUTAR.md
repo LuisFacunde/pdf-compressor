@@ -1,12 +1,12 @@
-# 🚀 Guia Rápido - Como Executar o PDF Compressor
+# Guia Rápido - Como Executar o PDF Compressor
 
-## ✅ Servidor já está rodando!
+## Servidor já está rodando!
 
 O servidor está ativo em **http://localhost:8000**
 
 ---
 
-## 📖 Acessar a Documentação
+## Acessar a Documentação
 
 Abra seu navegador e acesse:
 
@@ -29,7 +29,7 @@ http://localhost:8000/
 
 ---
 
-## 🔧 Como Iniciar o Servidor (próximas vezes)
+## Como Iniciar o Servidor (próximas vezes)
 
 ### **Opção 1: Usando o script (MAIS FÁCIL)**
 
@@ -51,13 +51,13 @@ $env:PYTHONPATH="c:\Users\luis.silva\Desktop\pdf-compressor\src"; python -m uvic
 
 ---
 
-## 🛑 Como Parar o Servidor
+## Como Parar o Servidor
 
 Pressione **Ctrl+C** no terminal onde o servidor está rodando.
 
 ---
 
-## 📝 Endpoints Disponíveis
+## Endpoints Disponíveis
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
@@ -70,7 +70,7 @@ Pressione **Ctrl+C** no terminal onde o servidor está rodando.
 
 ---
 
-## 💡 Exemplo de Uso
+## Exemplo de Uso
 
 ### Com PowerShell (Invoke-WebRequest)
 
@@ -110,19 +110,19 @@ curl -X POST "http://localhost:8000/api/v1/compress" \
 
 ---
 
-## 🎯 Níveis de Qualidade
+## Níveis de Qualidade
 
 | Qualidade | Uso Recomendado |
 |-----------|-----------------|
 | `screen` | Visualização rápida (menor tamanho) |
 | `ebook` | Visualização web |
 | `printer` | Impressão de qualidade |
-| `prepress` | **Arquivamento profissional** ⭐ (recomendado para exames médicos) |
+| `prepress` | **Arquivamento profissional** (recomendado para exames médicos) |
 | `default` | Padrão do Ghostscript |
 
 ---
 
-## ❓ Problemas Comuns
+## Problemas Comuns
 
 ### Erro: "ModuleNotFoundError"
 **Solução:** Instale as dependências:
@@ -144,7 +144,7 @@ $env:PYTHONPATH="src"; python -m uvicorn pdf_compressor.api.app:app --port 8001
 
 ---
 
-## 📚 Documentação Completa
+## Documentação Completa
 
 - [README.md](README.md) - Documentação completa do projeto
 - [API_USAGE.md](API_USAGE.md) - Guia detalhado da API
@@ -153,7 +153,7 @@ $env:PYTHONPATH="src"; python -m uvicorn pdf_compressor.api.app:app --port 8001
 
 ---
 
-## ✅ Checklist de Instalação
+## Checklist de Instalação
 
 - [x] Python 3.7+ instalado
 - [x] Dependências instaladas (`pip install -r requirements.txt`)

@@ -158,19 +158,22 @@ pip install -r requirements.txt
 
 #### 2. Iniciar o servidor
 
-**Opção 1 - Como módulo Python (Recomendado):**
+**Opção 1 - Usando script (Recomendado):**
 ```bash
-python -m pdf_compressor.server
+# Windows
+.\start_server.bat
+
+# Ou com PowerShell
+.\start_server.ps1
 ```
 
-**Opção 2 - Executando diretamente:**
+**Opção 2 - Com uvicorn (manual):**
 ```bash
-python src/pdf_compressor/server.py
-```
+# Windows PowerShell
+$env:PYTHONPATH="src"; python -m uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
 
-**Opção 3 - Com uvicorn:**
-```bash
-uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
+# Linux/macOS
+PYTHONPATH=src python -m uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
 ```
 
 O servidor estará disponível em `http://localhost:8000`
@@ -260,10 +263,10 @@ O sistema gera logs detalhados em duas saídas:
 
 ### Informações dos Logs
 
-- ✅ **Sucessos**: Nome do arquivo, tamanho original/final, % de economia
-- ❌ **Erros**: Motivo da falha, arquivo problemático
-- 📈 **Estatísticas**: Resumo do lote com economia total
-- ⏱️ **Tempo**: Timestamp de todas as operações
+- **Sucessos**: Nome do arquivo, tamanho original/final, % de economia
+- **Erros**: Motivo da falha, arquivo problemático
+- **Estatísticas**: Resumo do lote com economia total
+- **Tempo**: Timestamp de todas as operações
 
 ### Exemplo de Log
 
