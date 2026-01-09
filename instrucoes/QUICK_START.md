@@ -38,19 +38,22 @@ pip install -r requirements.txt
 
 ## Execução
 
-### Opção 1: Como módulo Python (Recomendado)
+### Opção 1: Usando scripts (Recomendado)
 ```bash
-python -m pdf_compressor.server
+# Windows - Clique duas vezes ou execute:
+.\executaveis\start_server.bat
+
+# PowerShell
+.\executaveis\start_server.ps1
 ```
 
-### Opção 2: Executando o arquivo diretamente
+### Opção 2: Com uvicorn (manual)
 ```bash
-python src/pdf_compressor/server.py
-```
+# Windows PowerShell
+$env:PYTHONPATH="src"; python -m uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
 
-### Opção 3: Usando uvicorn diretamente
-```bash
-uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
+# Linux/macOS
+PYTHONPATH=src python -m uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
 ```
 
 ## Verificação

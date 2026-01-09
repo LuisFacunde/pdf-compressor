@@ -161,10 +161,10 @@ pip install -r requirements.txt
 **Opção 1 - Usando script (Recomendado):**
 ```bash
 # Windows
-.\start_server.bat
+.\executaveis\start_server.bat
 
 # Ou com PowerShell
-.\start_server.ps1
+.\executaveis\start_server.ps1
 ```
 
 **Opção 2 - Com uvicorn (manual):**
@@ -207,7 +207,7 @@ if (result.success) {
 ```
 
 Para mais detalhes e exemplos completos, consulte:
-- [API_USAGE.md](API_USAGE.md) - Guia completo de uso da API
+- [API_USAGE.md](instrucoes/API_USAGE.md) - Guia completo de uso da API
 - [examples/typescript-client.ts](examples/typescript-client.ts) - Cliente TypeScript completo
 
 ## Níveis de Qualidade
@@ -231,13 +231,23 @@ Para exames médicos, recomendamos o nível **`prepress`** que oferece:
 ## Estrutura do Projeto
 
 ```
-compressor-pdfs/
+pdf-compressor/
+├── executaveis/
+│   ├── start_server.bat         # Script para iniciar servidor (Windows)
+│   └── start_server.ps1         # Script para iniciar servidor (PowerShell)
+├── instrucoes/
+│   ├── API_USAGE.md             # Guia completo de uso da API
+│   ├── ARCHITECTURE.md          # Arquitetura do projeto
+│   ├── COMO_EXECUTAR.md         # Guia rápido de execução
+│   └── QUICK_START.md           # Início rápido
 ├── src/
 │   ├── pdf_compressor/
-│   │   ├── __init__.py
-│   │   ├── __main__.py          # Interface CLI principal
-│   │   ├── compressor.py        # Lógica de compressão
-│   │   └── config.py           # Configurações do sistema
+│   │   ├── api/                 # API REST (FastAPI)
+│   │   ├── core/                # Configurações centrais
+│   │   ├── services/            # Lógica de negócio
+│   │   ├── repositories/        # Acesso a dados
+│   │   ├── utils/               # Utilitários
+│   │   └── server.py            # Script do servidor
 │   └── data/
 │       ├── input/
 │       │   └── pdfs_originais/  # Coloque seus PDFs aqui
@@ -246,7 +256,6 @@ compressor-pdfs/
 ├── tests/
 │   └── test_compressor.py       # Testes automatizados
 ├── logs/                        # Arquivos de log
-├── scripts/                     # Scripts de exemplo/desenvolvimento
 ├── .gitignore
 ├── README.md
 └── requirements.txt

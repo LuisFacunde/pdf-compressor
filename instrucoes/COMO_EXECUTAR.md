@@ -35,18 +35,18 @@ http://localhost:8000/
 
 Basta clicar duas vezes em:
 ```
-start_server.bat
+executaveis\start_server.bat
 ```
 
 Ou no PowerShell:
 ```powershell
-.\start_server.ps1
+.\executaveis\start_server.ps1
 ```
 
 ### **Opção 2: Comando manual**
 
 ```powershell
-$env:PYTHONPATH="c:\Users\luis.silva\Desktop\pdf-compressor\src"; python -m uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
+$env:PYTHONPATH="src"; python -m uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
 ```
 
 ---
@@ -146,7 +146,7 @@ $env:PYTHONPATH="src"; python -m uvicorn pdf_compressor.api.app:app --port 8001
 
 ## Documentação Completa
 
-- [README.md](README.md) - Documentação completa do projeto
+- [README.md](../README.md) - Documentação completa do projeto
 - [API_USAGE.md](API_USAGE.md) - Guia detalhado da API
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitetura do projeto
 - [QUICK_START.md](QUICK_START.md) - Guia de início rápido
