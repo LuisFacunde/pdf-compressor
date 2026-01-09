@@ -8,6 +8,7 @@ Aplicação desenvolvida para comprimir arquivos PDF de exames médicos visando 
 - [Funcionalidades](#funcionalidades)
 - [Instalação](#instalação)
 - [Como Usar](#como-usar)
+- [API REST](#api-rest)
 - [Níveis de Qualidade](#níveis-de-qualidade)
 - [Estrutura do Projeto](#estrutura-do-projeto)
 - [Logs e Monitoramento](#logs-e-monitoramento)
@@ -143,6 +144,68 @@ python -m pdf_compressor -i ./exames -o ./comprimidos -q ebook -v --overwrite
 ```bash
 python -m pdf_compressor --help
 ```
+
+## API REST
+
+O projeto inclui uma API REST completa para integração com backends TypeScript, Node.js ou qualquer outra aplicação.
+
+### Iniciar o Servidor da API
+
+#### 1. Instalar dependências
+```bash
+pip install -r requirements.txt
+```
+
+#### 2. Iniciar o servidor
+
+**Opção 1 - Como módulo Python (Recomendado):**
+```bash
+python -m pdf_compressor.server
+```
+
+**Opção 2 - Executando diretamente:**
+```bash
+python src/pdf_compressor/server.py
+```
+
+**Opção 3 - Com uvicorn:**
+```bash
+uvicorn pdf_compressor.api.app:app --host 0.0.0.0 --port 8000
+```
+
+O servidor estará disponível em `http://localhost:8000`
+
+> **Nota:** Certifique-se de que o Ghostscript está instalado e no PATH do sistema.
+
+### Documentação Interativa
+
+Acesse `http://localhost:8000/docs` para ver a documentação interativa do Swagger UI com todos os endpoints disponíveis.
+
+### Endpoints Principais
+
+- **GET `/health`** - Verifica status do serviço e disponibilidade do Ghostscript
+- **POST `/api/v1/compress`** - Comprime um único arquivo PDF
+- **POST `/api/v1/compress/batch`** - Comprime múltiplos arquivos PDF em lote
+- **GET `/api/v1/download/{file_id}`** - Baixa um arquivo comprimido
+- **GET `/api/v1/quality-settings`** - Retorna configurações de qualidade disponíveis
+
+### Exemplo de Uso com TypeScript
+
+```typescript
+import { PDFCompressorClient } from './examples/typescript-client';
+
+const client = new PDFCompressorClient('http://localhost:8000');
+
+// Comprimir um arquivo
+const result = await client.compressFile(file, 'prepress');
+if (result.success) {
+  await client.downloadFileAsLink(result.file_id!, `compressed_${file.name}`);
+}
+```
+
+Para mais detalhes e exemplos completos, consulte:
+- [API_USAGE.md](API_USAGE.md) - Guia completo de uso da API
+- [examples/typescript-client.ts](examples/typescript-client.ts) - Cliente TypeScript completo
 
 ## Níveis de Qualidade
 
