@@ -42,15 +42,12 @@ class FileService:
         output_path = self.file_repository.get_output_path(file_id)
         
         try:
-            # Ler e validar arquivo
             content = await file.read()
             validate_file_size(len(content))
             
-            # Salvar arquivo temporário
             self.file_repository.save_file(file_id, content)
             original_size = len(content)
             
-            # Comprimir
             logger.info(f"Comprimindo arquivo {file.filename} (ID: {file_id}) com qualidade '{quality}'")
             success, error = self.compression_service.compress_pdf(
                 input_path,
@@ -64,16 +61,6 @@ class FileService:
                 return {
                     "success": False,
                     "error": error or "Falha na compressão",
-                    "file_id": None,
-                }
-            
-            # Verificar se o arquivo comprimido é válido
-            compressed_size = get_file_size(output_path)
-            if compressed_size < MIN_OUTPUT_FILE_SIZE:
-                self.file_repository.delete_all_files(file_id)
-                return {
-                    "success": False,
-                    "error": "Arquivo comprimido inválido ou muito pequeno",
                     "file_id": None,
                 }
             
@@ -128,7 +115,6 @@ class FileService:
             output_path = self.file_repository.get_output_path(file_id)
             
             try:
-                # Validar tipo de arquivo
                 if not file.filename:
                     results.append({
                         "file_name": "unknown",
@@ -141,16 +127,13 @@ class FileService:
                 
                 validate_pdf_file(file.filename)
                 
-                # Ler e validar tamanho
                 content = await file.read()
                 validate_file_size(len(content))
                 
-                # Salvar arquivo
                 self.file_repository.save_file(file_id, content)
                 original_size = len(content)
                 total_original_size += original_size
                 
-                # Comprimir
                 success, error = self.compression_service.compress_pdf(
                     input_path,
                     output_path,
@@ -194,7 +177,6 @@ class FileService:
                     })
                     self.file_repository.delete_file(file_id, is_output=True)
                 
-                # Limpar arquivo de entrada após processamento
                 self.file_repository.delete_file(file_id, is_output=False)
                 
             except Exception as e:

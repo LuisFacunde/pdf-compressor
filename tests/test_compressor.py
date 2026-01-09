@@ -11,7 +11,6 @@ def test_compress(tmp_path, q):
     src = INPUT_DIR / "retinografia.pdf"
     out = tmp_path / f"out_{q}.pdf"
     
-    # Pular teste se arquivo de origem não existir
     if not src.exists():
         pytest.skip(f"Arquivo de teste não encontrado: {src}")
     

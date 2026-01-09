@@ -44,7 +44,6 @@ class CompressionService:
         Returns:
             Tupla (sucesso, mensagem_de_erro)
         """
-        # Validações
         if not input_path.exists():
             error_msg = f"Input file does not exist: {input_path}"
             logger.error(error_msg)
@@ -65,12 +64,10 @@ class CompressionService:
             logger.error(error_msg)
             return False, error_msg
         
-        # Criar diretório de saída se necessário
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
         original_size = get_file_size(input_path)
         
-        # Comando Ghostscript
         cmd = [
             self.ghostscript_cmd,
             "-sDEVICE=pdfwrite",
@@ -91,7 +88,6 @@ class CompressionService:
                 cmd, capture_output=True, text=True, check=True, timeout=300
             )
             
-            # Verificar se o arquivo foi criado e não está vazio
             if not output_path.exists() or get_file_size(output_path) == 0:
                 error_msg = "Compression failed, output file is missing or empty."
                 logger.error(error_msg)

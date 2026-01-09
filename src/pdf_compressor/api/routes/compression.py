@@ -12,7 +12,6 @@ from ...core.config import QUALITY_SETTINGS
 
 router = APIRouter(tags=["Compression"])
 
-# Inicializar serviços (em produção, usar injeção de dependência)
 _file_repository = FileRepository()
 _compression_service = CompressionService()
 _file_service = FileService(_file_repository, _compression_service)
@@ -31,12 +30,7 @@ async def compress_single_file(
     
     Retorna informações sobre a compressão realizada
     """
-    # Validar qualidade
     validate_quality(quality)
-    
-    # Validar tipo de arquivo
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="Nome de arquivo não fornecido")
     
     validate_pdf_file(file.filename)
     
@@ -65,13 +59,12 @@ async def compress_batch_files(
     - **files**: Lista de arquivos PDF a serem comprimidos
     - **quality**: Nível de compressão (screen, ebook, printer, prepress, default)
     """
-    # Validar qualidade
     validate_quality(quality)
     
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo fornecido")
     
-    if len(files) > 100:  # Limite de segurança
+    if len(files) > 100:
         raise HTTPException(status_code=400, detail="Máximo de 100 arquivos por lote")
     
     try:
@@ -108,7 +101,6 @@ async def cleanup_file(file_id: str):
     
     - **file_id**: ID do arquivo a ser removido
     """
-    # Verificar se existem arquivos antes de deletar
     input_exists = _file_repository.file_exists(file_id, is_output=False)
     output_exists = _file_repository.file_exists(file_id, is_output=True)
     
@@ -118,7 +110,6 @@ async def cleanup_file(file_id: str):
             message="Nenhum arquivo encontrado para remoção"
         )
     
-    # Deletar arquivos
     _file_repository.delete_all_files(file_id)
     
     return CleanupResponse(

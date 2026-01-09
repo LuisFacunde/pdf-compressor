@@ -12,7 +12,7 @@ def setup_cors(app: FastAPI, allow_origins: list = None) -> None:
         allow_origins: Lista de origens permitidas. Se None, permite todas (apenas desenvolvimento)
     """
     if allow_origins is None:
-        allow_origins = ["*"]  # Em produção, especifique os domínios permitidos
+        allow_origins = ["*"]
     
     app.add_middleware(
         CORSMiddleware,
