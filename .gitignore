@@ -1,19 +1,31 @@
-# Arquivos de entrada e saída de PDFs
+# PDFs podem conter dados pessoais/sensiveis; nao versionar arquivos locais
 *.pdf
 
-# Arquivos temporários do Python
+# Cache e arquivos temporarios do Python
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 
-# Arquivos de ambiente virtual
+# Ambientes virtuais
 .venv/
 env/
 venv/
 
-# Arquivos de log
-*.log
+# Cobertura de testes
+.coverage
+.coverage.*
+htmlcov/
 
-# Arquivos da IDEs
+# Logs e historico local da aplicacao
+*.log
+/logs/
+/historico/
+
+# Pastas locais de entrada e saida de PDFs
+/src/data/input/pdfs_originais/
+/src/data/output/pdfs_compactados/
+
+# Arquivos de IDEs
 .vscode/
 .idea/

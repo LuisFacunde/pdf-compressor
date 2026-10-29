@@ -6,13 +6,20 @@ import concurrent.futures
 from tqdm import tqdm
 from pathlib import Path
 from typing import Optional, Tuple
-from .config import GHOSTSCRIPT_CMD
+from .config import GHOSTSCRIPT_CMD, LOG_FILE
+from .history import (
+    STATUS_COMPRESSED,
+    STATUS_FAILED,
+    STATUS_KEPT_ORIGINAL,
+    is_already_compressed,
+    record_compression,
+)
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("../logs/pdf_compression.log"),
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
         logging.StreamHandler(),
     ],
 )
@@ -148,6 +155,15 @@ class ThreadSafeCounter:
             return self._value
 
 
+def _safe_unlink(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as e:
+        logger.warning(f"Could not remove temporary file {path}: {e}")
+
+
 def compress_single_file_wrapper(args):
     pdf_file, output_dir, quality, overwrite, in_place = args
 
@@ -155,18 +171,30 @@ def compress_single_file_wrapper(args):
     success = False
     error = None
     final_output_path = None
+    status = STATUS_FAILED
 
     if in_place:
-        temp_output_file = pdf_file.with_suffix(".pdf.tmp")
+        temp_output_file = pdf_file.with_name(pdf_file.name + ".tmp")
+        # Remove .tmp órfão de execuções interrompidas
+        _safe_unlink(temp_output_file)
         success, error = compress_pdf(
             pdf_file, temp_output_file, quality, overwrite=True
         )
 
         if success:
-            if get_file_size(temp_output_file) > 1024:
+            compressed_size = get_file_size(temp_output_file)
+            if compressed_size > 1024 and compressed_size >= original_size:
+                # Resultado não é menor: mantém o original intacto
+                status = STATUS_KEPT_ORIGINAL
+                logger.info(
+                    f"⏭️ {pdf_file.name}: compressed file is not smaller, original kept."
+                )
+                final_output_path = pdf_file
+            elif compressed_size > 1024:
                 try:
-                    pdf_file.unlink()
-                    temp_output_file.rename(pdf_file)
+                    # Substituição atômica: o original nunca fica sem existir
+                    os.replace(temp_output_file, pdf_file)
+                    status = STATUS_COMPRESSED
                     final_output_path = pdf_file
                 except Exception as e:
                     success = False
@@ -175,17 +203,24 @@ def compress_single_file_wrapper(args):
                 success = False
                 error = "Compressed file is too small, likely an error occurred."
 
-        if not success and temp_output_file.exists():
-            temp_output_file.unlink()
+        if temp_output_file.exists():
+            _safe_unlink(temp_output_file)
 
     else:
         output_file = output_dir / f"{pdf_file.stem}_compress.pdf"
         success, error = compress_pdf(pdf_file, output_file, quality, overwrite)
         if success:
             final_output_path = output_file
+            status = STATUS_COMPRESSED
 
     return {
         "file_name": pdf_file.name,
+        "file_path": str(pdf_file),
+        "status": status if success else STATUS_FAILED,
+        "mode": "in_place" if in_place else "output_dir",
+        "output_path": (
+            str(final_output_path) if final_output_path and not in_place else None
+        ),
         "success": success,
         "error": error,
         "original_size": original_size,
@@ -203,6 +238,7 @@ def compress_pdf_batch(
     max_workers: int = None,
     show_progress: bool = True,
     in_place: bool = False,
+    force: bool = False,
 ) -> Tuple[int, int]:
 
     if in_place:
@@ -212,6 +248,21 @@ def compress_pdf_batch(
         pdf_files = list(input_dir.rglob("*.pdf"))
     else:
         pdf_files = list(input_dir.glob("*.pdf"))
+
+    if in_place and not force:
+        # Ignora arquivos já comprimidos (mesma qualidade) e não modificados desde então
+        pending = []
+        for pdf_file in pdf_files:
+            try:
+                if is_already_compressed(pdf_file, quality):
+                    logger.info(
+                        f"⏭️ {pdf_file.name}: já comprimido (histórico), pulando."
+                    )
+                    continue
+            except Exception as e:
+                logger.warning(f"Falha ao consultar histórico de {pdf_file.name}: {e}")
+            pending.append(pdf_file)
+        pdf_files = pending
 
     if not pdf_files:
         logger.warning(f"No PDF files found in {input_dir}")
@@ -267,6 +318,24 @@ def compress_pdf_batch(
 
                 try:
                     result = future.result()
+
+                    try:
+                        record_compression(
+                            Path(result["file_path"]),
+                            status=result["status"],
+                            mode=result["mode"],
+                            quality=quality,
+                            original_size=result["original_size"],
+                            compressed_size=result["compressed_size"],
+                            output_path=(
+                                Path(result["output_path"])
+                                if result["output_path"]
+                                else None
+                            ),
+                            error=result["error"],
+                        )
+                    except Exception as hist_exc:
+                        logger.warning(f"Falha ao gravar histórico: {hist_exc}")
 
                     total_original_size += result["original_size"]
 

@@ -2,7 +2,7 @@ import os
 import platform
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent.parent.parent
+HERE = Path(__file__).resolve().parent.parent
 INPUT_DIR = HERE / "src" / "data" / "input" / "pdfs_originais"
 OUTPUT_DIR = HERE / "src" / "data" / "output" / "pdfs_compactados"
 
@@ -69,4 +69,8 @@ MIN_OUTPUT_FILE_SIZE = 1024
 LOG_FILE = HERE / "logs" / "pdf_compression.log"
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-LOG_FILE.parent.mkdir(exist_ok=True)
+LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+HISTORY_DIR = HERE / "historico"
+HISTORY_DB = HISTORY_DIR / "historico.db"
+HISTORY_DIR.mkdir(parents=True, exist_ok=True)

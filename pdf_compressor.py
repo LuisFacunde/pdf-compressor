@@ -1,8 +1,8 @@
 import sys
 import argparse
 from pathlib import Path
-from .config import INPUT_DIR, OUTPUT_DIR
-from .compressor import compress_pdf, compress_pdf_batch
+from src.config import INPUT_DIR, OUTPUT_DIR
+from src.compressor import compress_pdf, compress_pdf_batch
 
 
 def validate_directory(path: Path, create_if_missing: bool = False) -> bool:
@@ -104,7 +104,34 @@ def main():
         "--no-progress", action="store_true", help="desabilitar barra de progresso"
     )
 
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="reprocessar arquivos --in-place mesmo que o histórico indique que já foram comprimidos",
+    )
+    parser.add_argument(
+        "--history",
+        nargs="?",
+        const="",
+        metavar="PASTA",
+        help="exibir o histórico de compressões (opcionalmente filtrado por pasta) e sair",
+    )
+
     args = parser.parse_args()
+
+    if args.history is not None:
+        from src.history import get_history
+
+        rows = get_history(folder=args.history or None)
+        if not rows:
+            print("Histórico vazio.")
+        for r in rows:
+            print(
+                f"{r['compressed_at']} | {r['status']:<13} | {r['quality']:<8} | "
+                f"{r['original_size']} -> {r['compressed_size']} B "
+                f"({r['reduction_percent']:.1f}%) | {r['file_path']}"
+            )
+        return 0
 
     if args.verbose:
         import logging
@@ -119,6 +146,22 @@ def main():
         success, error = compress_pdf(
             input_file, output_file, quality=args.quality, overwrite=args.overwrite
         )
+
+        try:
+            from src.history import STATUS_COMPRESSED, STATUS_FAILED, record_compression
+
+            record_compression(
+                input_file,
+                status=STATUS_COMPRESSED if success else STATUS_FAILED,
+                mode="single",
+                quality=args.quality,
+                original_size=input_file.stat().st_size if input_file.exists() else 0,
+                compressed_size=output_file.stat().st_size if success else 0,
+                output_path=output_file if success else None,
+                error=error,
+            )
+        except Exception as e:
+            print(f"Aviso: falha ao gravar histórico: {e}")
 
         if success:
             print("✅ Compressão concluída com sucesso!")
@@ -164,6 +207,7 @@ def main():
             max_workers=args.jobs,
             show_progress=not args.no_progress,
             in_place=args.in_place,
+            force=args.force,
         )
 
         print("-" * 50)
