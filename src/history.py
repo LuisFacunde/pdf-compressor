@@ -1,9 +1,11 @@
+import os
 import sqlite3
+import threading
 from pathlib import Path
 from datetime import datetime
 from .config import HISTORY_DB
 from contextlib import contextmanager
-from typing import Iterator, List, Optional
+from typing import Dict, Iterator, List, Optional, Set
 
 STATUS_COMPRESSED = "compressed"
 STATUS_KEPT_ORIGINAL = "kept_original"
@@ -28,20 +30,63 @@ CREATE TABLE IF NOT EXISTS compressions (
 );
 CREATE INDEX IF NOT EXISTS idx_compressions_path ON compressions(file_path);
 CREATE INDEX IF NOT EXISTS idx_compressions_folder ON compressions(folder);
+CREATE INDEX IF NOT EXISTS idx_compressions_lookup
+    ON compressions(file_path, mode, quality);
 """
+
+_local = threading.local()
+
+
+def _normalize_path(path: Path) -> str:
+    return os.path.abspath(os.fspath(path))
+
+
+def _get_connection(db_path: Path) -> sqlite3.Connection:
+    conns: Dict[str, sqlite3.Connection] = getattr(_local, "conns", None)
+    if conns is None:
+        conns = {}
+        _local.conns = conns
+
+    initialized: Set[str] = getattr(_local, "initialized", None)
+    if initialized is None:
+        initialized = set()
+        _local.initialized = initialized
+
+    key = _normalize_path(db_path)
+    conn = conns.get(key)
+    if conn is not None and not db_path.exists():
+        try:
+            conn.close()
+        except sqlite3.Error:
+            pass
+        conns.pop(key, None)
+        initialized.discard(key)
+        conn = None
+
+    if conn is None:
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(db_path, timeout=30)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conns[key] = conn
+
+    if key not in initialized:
+        conn.executescript(_SCHEMA)
+        initialized.add(key)
+
+    return conn
 
 
 @contextmanager
 def _connect(db_path: Path = HISTORY_DB) -> Iterator[sqlite3.Connection]:
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path, timeout=30)
-    conn.row_factory = sqlite3.Row
+    conn = _get_connection(db_path)
     try:
-        conn.executescript(_SCHEMA)
         yield conn
         conn.commit()
-    finally:
-        conn.close()
+    except Exception:
+        conn.rollback()
+        raise
 
 
 def init_db(db_path: Path = HISTORY_DB) -> None:
@@ -59,20 +104,28 @@ def record_compression(
     output_path: Optional[Path] = None,
     error: Optional[str] = None,
     db_path: Path = HISTORY_DB,
+    file_mtime_ns: Optional[int] = None,
 ) -> None:
     """Registra uma tentativa de compressão (sucesso, original mantido ou falha)."""
-    file_path = Path(file_path).resolve()
+    resolved_file_path = _normalize_path(file_path)
+    folder_path = os.path.dirname(resolved_file_path)
+    file_name = os.path.basename(resolved_file_path)
     reduction = (
         (original_size - compressed_size) / original_size * 100
         if original_size and status != STATUS_FAILED
         else 0.0
     )
     # Referência do arquivo final no disco (usada para detectar se já foi processado)
-    final_path = Path(output_path) if output_path else file_path
-    try:
-        mtime_ns = final_path.stat().st_mtime_ns if status != STATUS_FAILED else None
-    except OSError:
+    if status == STATUS_FAILED:
         mtime_ns = None
+    elif file_mtime_ns is not None:
+        mtime_ns = file_mtime_ns
+    else:
+        final_path = Path(output_path) if output_path else Path(resolved_file_path)
+        try:
+            mtime_ns = final_path.stat().st_mtime_ns
+        except OSError:
+            mtime_ns = None
 
     with _connect(db_path) as conn:
         conn.execute(
@@ -82,9 +135,9 @@ def record_compression(
                 file_mtime_ns, compressed_at)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
-                file_path.name,
-                str(file_path.parent),
-                str(file_path),
+                file_name,
+                folder_path,
+                resolved_file_path,
                 str(output_path) if output_path else None,
                 mode,
                 quality,
@@ -100,23 +153,28 @@ def record_compression(
 
 
 def is_already_compressed(
-    file_path: Path, quality: str, db_path: Path = HISTORY_DB
+    file_path: Path,
+    quality: str,
+    db_path: Path = HISTORY_DB,
+    stat_result: Optional[os.stat_result] = None,
 ) -> bool:
     """True se o arquivo (in-place) já foi processado com a mesma qualidade
     e não foi modificado desde então (mesmo mtime e tamanho)."""
-    file_path = Path(file_path).resolve()
+    resolved_file_path = _normalize_path(file_path)
     try:
-        stat = file_path.stat()
+        stat = (
+            stat_result if stat_result is not None else Path(resolved_file_path).stat()
+        )
     except OSError:
         return False
 
     with _connect(db_path) as conn:
         row = conn.execute(
-            """SELECT * FROM compressions
+            """SELECT file_mtime_ns, compressed_size FROM compressions
                WHERE file_path = ? AND mode = 'in_place' AND quality = ?
                  AND status IN (?, ?)
                ORDER BY id DESC LIMIT 1""",
-            (str(file_path), quality, STATUS_COMPRESSED, STATUS_KEPT_ORIGINAL),
+            (resolved_file_path, quality, STATUS_COMPRESSED, STATUS_KEPT_ORIGINAL),
         ).fetchone()
 
     return bool(
@@ -134,7 +192,7 @@ def get_history(
     params: list = []
     if folder:
         query += " WHERE folder = ?"
-        params.append(str(Path(folder).resolve()))
+        params.append(_normalize_path(Path(folder)))
     query += " ORDER BY id DESC LIMIT ?"
     params.append(limit)
     with _connect(db_path) as conn:

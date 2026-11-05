@@ -1,5 +1,4 @@
 import os
-
 from src.history import (
     STATUS_COMPRESSED,
     STATUS_FAILED,
@@ -121,3 +120,44 @@ def test_history_folder_filter_and_limit_return_latest_rows(tmp_path):
     assert latest[0]["quality"] == "printer"
     assert [row["quality"] for row in filtered] == ["printer", "screen"]
     assert all(row["folder"] == str(first_folder.resolve()) for row in filtered)
+
+
+def test_sqlite_reuses_connection_and_creates_lookup_index(tmp_path):
+    from src.history import _connect
+
+    database = tmp_path / "history.db"
+    with _connect(database) as first_conn:
+        pass
+    with _connect(database) as second_conn:
+        indexes = {
+            row["name"]
+            for row in second_conn.execute(
+                "PRAGMA index_list('compressions')"
+            ).fetchall()
+        }
+
+    assert first_conn is second_conn
+    assert "idx_compressions_lookup" in indexes
+
+
+def test_history_reuses_passed_stat_and_mtime_without_extra_stat(tmp_path):
+    source = tmp_path / "source.pdf"
+    source.write_bytes(b"x" * 2048)
+    stat_result = source.stat()
+    source.unlink()
+    database = tmp_path / "history.db"
+
+    record_compression(
+        source,
+        status=STATUS_COMPRESSED,
+        mode="in_place",
+        quality="ebook",
+        original_size=4096,
+        compressed_size=stat_result.st_size,
+        db_path=database,
+        file_mtime_ns=stat_result.st_mtime_ns,
+    )
+
+    assert is_already_compressed(
+        source, "ebook", db_path=database, stat_result=stat_result
+    )

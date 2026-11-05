@@ -26,8 +26,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _get_file_stat(file_path: Path) -> Optional[os.stat_result]:
+    try:
+        return file_path.stat()
+    except OSError:
+        return None
+
+
 def get_file_size(file_path: Path) -> int:
-    return file_path.stat().st_size if file_path.exists() else 0
+    stat = _get_file_stat(file_path)
+    return stat.st_size if stat is not None else 0
 
 
 def format_file_size(
@@ -64,7 +72,8 @@ def compress_pdf(
     overwrite: bool = False,
 ) -> Tuple[bool, Optional[str]]:
 
-    if not input_path.exists():
+    input_stat = _get_file_stat(input_path)
+    if input_stat is None:
         error_msg = f"Input file does not exist: {input_path}"
         logger.error(error_msg)
         return False, error_msg
@@ -74,7 +83,7 @@ def compress_pdf(
         logger.error(error_msg)
         return False, error_msg
 
-    if output_path.exists() and not overwrite:
+    if not overwrite and output_path.exists():
         error_msg = f"Output file already exists and overwrite is False: {output_path}"
         logger.warning(error_msg)
         return False, error_msg
@@ -86,7 +95,7 @@ def compress_pdf(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    original_size = get_file_size(input_path)
+    original_size = input_stat.st_size
 
     cmd = [
         GHOSTSCRIPT_CMD,
@@ -108,12 +117,12 @@ def compress_pdf(
             cmd, capture_output=True, text=True, check=True, timeout=300
         )
 
-        if not output_path.exists() or get_file_size(output_path) == 0:
+        compressed_size = get_file_size(output_path)
+        if compressed_size == 0:
             error_msg = "Compression failed, output file is missing or empty."
             logger.error(error_msg)
             return False, error_msg
 
-        compressed_size = get_file_size(output_path)
         compression_ratio = calculate_compression_ratio(original_size, compressed_size)
 
         logger.info(
@@ -165,13 +174,17 @@ def _safe_unlink(path: Path) -> None:
 
 
 def compress_single_file_wrapper(args):
-    pdf_file, output_dir, quality, overwrite, in_place = args
+    pdf_file, output_dir, quality, overwrite, in_place = args[:5]
+    original_size = (
+        args[5] if len(args) > 5 and args[5] is not None else get_file_size(pdf_file)
+    )
 
-    original_size = get_file_size(pdf_file)
     success = False
     error = None
     final_output_path = None
     status = STATUS_FAILED
+    final_compressed_size = 0
+    file_mtime_ns = None
 
     if in_place:
         temp_output_file = pdf_file.with_name(pdf_file.name + ".tmp")
@@ -190,12 +203,14 @@ def compress_single_file_wrapper(args):
                     f"⏭️ {pdf_file.name}: compressed file is not smaller, original kept."
                 )
                 final_output_path = pdf_file
+                final_compressed_size = original_size
             elif compressed_size > 1024:
                 try:
                     # Substituição atômica: o original nunca fica sem existir
                     os.replace(temp_output_file, pdf_file)
                     status = STATUS_COMPRESSED
                     final_output_path = pdf_file
+                    final_compressed_size = compressed_size
                 except Exception as e:
                     success = False
                     error = f"Failed to replace original file: {e}"
@@ -203,7 +218,7 @@ def compress_single_file_wrapper(args):
                 success = False
                 error = "Compressed file is too small, likely an error occurred."
 
-        if temp_output_file.exists():
+        if status != STATUS_COMPRESSED:
             _safe_unlink(temp_output_file)
 
     else:
@@ -212,6 +227,12 @@ def compress_single_file_wrapper(args):
         if success:
             final_output_path = output_file
             status = STATUS_COMPRESSED
+
+    if success and final_output_path is not None:
+        final_stat = _get_file_stat(final_output_path)
+        if final_stat is not None:
+            final_compressed_size = final_stat.st_size
+            file_mtime_ns = final_stat.st_mtime_ns
 
     return {
         "file_name": pdf_file.name,
@@ -224,9 +245,8 @@ def compress_single_file_wrapper(args):
         "success": success,
         "error": error,
         "original_size": original_size,
-        "compressed_size": (
-            get_file_size(final_output_path) if success and final_output_path else 0
-        ),
+        "compressed_size": final_compressed_size if success else 0,
+        "file_mtime_ns": file_mtime_ns,
     }
 
 
@@ -298,7 +318,10 @@ def compress_pdf_batch(
                     discovered_count += 1
                     if in_place and not force:
                         try:
-                            if is_already_compressed(pdf_file, quality):
+                            file_stat = _get_file_stat(pdf_file)
+                            if is_already_compressed(
+                                pdf_file, quality, stat_result=file_stat
+                            ):
                                 skipped_count += 1
                                 logger.info(
                                     f"⏭️ {pdf_file.name}: já comprimido "
@@ -334,6 +357,11 @@ def compress_pdf_batch(
                         result = future.result()
 
                         try:
+                            extra_history_kwargs = (
+                                {"file_mtime_ns": result["file_mtime_ns"]}
+                                if result.get("file_mtime_ns") is not None
+                                else {}
+                            )
                             record_compression(
                                 Path(result["file_path"]),
                                 status=result["status"],
@@ -347,6 +375,7 @@ def compress_pdf_batch(
                                     else None
                                 ),
                                 error=result["error"],
+                                **extra_history_kwargs,
                             )
                         except Exception as hist_exc:
                             logger.warning(f"Falha ao gravar histórico: {hist_exc}")
