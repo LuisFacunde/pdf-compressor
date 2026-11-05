@@ -1,5 +1,9 @@
-import pytest
+from concurrent.futures import Future
+from pathlib import Path
 import subprocess
+
+import pytest
+
 import src.compressor as compressor
 from src.compressor import compress_single_file_wrapper
 from src.compressor import check_ghostscript_available, compress_pdf
@@ -244,6 +248,106 @@ def test_batch_writes_compressed_pdf_and_history(tmp_path, sample_pdf, monkeypat
     assert rows[0]["original_size"] == sample_pdf.stat().st_size
     assert rows[0]["compressed_size"] == output.stat().st_size
     assert rows[0]["error"] is None
+
+
+def test_batch_compresses_while_discovering_pdfs(tmp_path, monkeypatch):
+    first_pdf = tmp_path / "first.pdf"
+    second_pdf = tmp_path / "second.pdf"
+    first_pdf.write_bytes(b"first PDF")
+    second_pdf.write_bytes(b"second PDF")
+    recorded_files = []
+    progress_updates = []
+    database = tmp_path / "history.db"
+
+    class ProgressBarWithoutTotal:
+        def __init__(self, **kwargs):
+            assert "total" not in kwargs
+
+        def __bool__(self):
+            raise TypeError("bool() undefined when iterable == total == None")
+
+        def update(self, amount):
+            progress_updates.append(amount)
+
+        def close(self):
+            pass
+
+    def lazy_pdf_paths():
+        yield first_pdf
+        assert recorded_files == [first_pdf.resolve()]
+        yield second_pdf
+
+    def lazy_glob(path, pattern):
+        assert path == tmp_path
+        assert pattern == "*.pdf"
+        return lazy_pdf_paths()
+
+    class ImmediateExecutor:
+        def __init__(self, max_workers):
+            assert max_workers == 1
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, _exc_value, _traceback):
+            assert exc_type is None
+            assert _exc_value is None
+            assert _traceback is None
+            return False
+
+        def submit(self, function, args):
+            future = Future()
+            future.set_result(function(args))
+            return future
+
+    def fake_compression(args):
+        pdf_file = args[0]
+        return {
+            "file_name": pdf_file.name,
+            "file_path": str(pdf_file),
+            "status": STATUS_COMPRESSED,
+            "mode": "output_dir",
+            "output_path": None,
+            "success": True,
+            "error": None,
+            "original_size": pdf_file.stat().st_size,
+            "compressed_size": pdf_file.stat().st_size,
+        }
+
+    def fake_history_record(file_path, **kwargs):
+        assert kwargs["status"] == STATUS_COMPRESSED
+        recorded_files.append(Path(file_path).resolve())
+        history.record_compression(file_path, db_path=database, **kwargs)
+
+    import src.history as history
+
+    monkeypatch.setattr(Path, "glob", lazy_glob)
+    monkeypatch.setattr(
+        compressor.concurrent.futures,
+        "ProcessPoolExecutor",
+        ImmediateExecutor,
+    )
+    monkeypatch.setattr(compressor, "compress_single_file_wrapper", fake_compression)
+    monkeypatch.setattr(compressor, "record_compression", fake_history_record)
+    monkeypatch.setattr(compressor, "tqdm", ProgressBarWithoutTotal)
+
+    successful, failed = compressor.compress_pdf_batch(
+        tmp_path,
+        tmp_path / "output",
+        max_workers=1,
+        show_progress=True,
+    )
+
+    assert (successful, failed) == (2, 0)
+    assert recorded_files == [first_pdf.resolve(), second_pdf.resolve()]
+    assert progress_updates == [1, 1]
+    rows = history.get_history(db_path=database)
+    assert len(rows) == 2
+    assert {row["file_path"] for row in rows} == {
+        str(first_pdf.resolve()),
+        str(second_pdf.resolve()),
+    }
+    assert all(row["status"] == STATUS_COMPRESSED for row in rows)
 
 
 def test_failed_compression_can_be_recorded_in_history(tmp_path):

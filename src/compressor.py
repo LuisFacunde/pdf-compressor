@@ -1,10 +1,10 @@
 import os
-import subprocess
 import logging
 import threading
-import concurrent.futures
+import subprocess
 from tqdm import tqdm
 from pathlib import Path
+import concurrent.futures
 from typing import Optional, Tuple
 from .config import GHOSTSCRIPT_CMD, LOG_FILE
 from .history import (
@@ -240,62 +240,39 @@ def compress_pdf_batch(
     in_place: bool = False,
     force: bool = False,
 ) -> Tuple[int, int]:
-
     if in_place:
         logger.info(
             f"Modo 'in-place' ativado. Procurando PDFs recursivamente em {input_dir}"
         )
-        pdf_files = list(input_dir.rglob("*.pdf"))
+        pdf_files = iter(input_dir.rglob("*.pdf"))
     else:
-        pdf_files = list(input_dir.glob("*.pdf"))
-
-    if in_place and not force:
-        # Ignora arquivos já comprimidos (mesma qualidade) e não modificados desde então
-        pending = []
-        for pdf_file in pdf_files:
-            try:
-                if is_already_compressed(pdf_file, quality):
-                    logger.info(
-                        f"⏭️ {pdf_file.name}: já comprimido (histórico), pulando."
-                    )
-                    continue
-            except Exception as e:
-                logger.warning(f"Falha ao consultar histórico de {pdf_file.name}: {e}")
-            pending.append(pdf_file)
-        pdf_files = pending
-
-    if not pdf_files:
-        logger.warning(f"No PDF files found in {input_dir}")
-        return 0, 0
+        pdf_files = iter(input_dir.glob("*.pdf"))
 
     if max_workers is None:
-        import os
-
         cpu_count = os.cpu_count() or 4
-        max_workers = min(12, cpu_count, len(pdf_files))
+        max_workers = min(12, cpu_count)
+    if max_workers < 1:
+        raise ValueError("max_workers must be greater than zero")
 
     logger.info(
-        f"Found {len(pdf_files)} PDF files to compress using {max_workers} parallel workers"
+        f"Scanning for PDFs and compressing with up to {max_workers} parallel workers"
     )
-
-    compression_args = []
-    for pdf_file in pdf_files:
-        compression_args.append((pdf_file, output_dir, quality, overwrite, in_place))
 
     successful = 0
     failed = 0
     total_original_size = 0
     total_compressed_size = 0
     failed_files = []
+    discovered_count = 0
+    skipped_count = 0
+    submitted_count = 0
 
     progress_bar = None
     if show_progress:
         try:
             progress_bar = tqdm(
-                total=len(pdf_files),
                 desc="Comprimindo PDFs",
                 unit="arquivo",
-                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
             )
         except ImportError:
             logger.warning(
@@ -307,67 +284,117 @@ def compress_pdf_batch(
         with concurrent.futures.ProcessPoolExecutor(
             max_workers=max_workers
         ) as executor:
-            future_to_args = {
-                executor.submit(compress_single_file_wrapper, args): args
-                for args in compression_args
-            }
+            future_to_file = {}
+            source_exhausted = False
 
-            for future in concurrent.futures.as_completed(future_to_args):
-                args = future_to_args[future]
-                pdf_file = args[0]
-
-                try:
-                    result = future.result()
-
+            while future_to_file or not source_exhausted:
+                while len(future_to_file) < max_workers and not source_exhausted:
                     try:
-                        record_compression(
-                            Path(result["file_path"]),
-                            status=result["status"],
-                            mode=result["mode"],
-                            quality=quality,
-                            original_size=result["original_size"],
-                            compressed_size=result["compressed_size"],
-                            output_path=(
-                                Path(result["output_path"])
-                                if result["output_path"]
-                                else None
-                            ),
-                            error=result["error"],
-                        )
-                    except Exception as hist_exc:
-                        logger.warning(f"Falha ao gravar histórico: {hist_exc}")
+                        pdf_file = next(pdf_files)
+                    except StopIteration:
+                        source_exhausted = True
+                        break
 
-                    total_original_size += result["original_size"]
+                    discovered_count += 1
+                    if in_place and not force:
+                        try:
+                            if is_already_compressed(pdf_file, quality):
+                                skipped_count += 1
+                                logger.info(
+                                    f"⏭️ {pdf_file.name}: já comprimido "
+                                    "(histórico), pulando."
+                                )
+                                continue
+                        except Exception as e:
+                            logger.warning(
+                                f"Falha ao consultar histórico de {pdf_file.name}: {e}"
+                            )
 
-                    if result["success"]:
-                        successful += 1
-                        total_compressed_size += result["compressed_size"]
-                    else:
+                    args = (
+                        pdf_file,
+                        output_dir,
+                        quality,
+                        overwrite,
+                        in_place,
+                    )
+                    future = executor.submit(compress_single_file_wrapper, args)
+                    future_to_file[future] = pdf_file
+                    submitted_count += 1
+
+                if not future_to_file:
+                    continue
+
+                completed, _ = concurrent.futures.wait(
+                    future_to_file,
+                    return_when=concurrent.futures.FIRST_COMPLETED,
+                )
+                for future in completed:
+                    pdf_file = future_to_file.pop(future)
+                    try:
+                        result = future.result()
+
+                        try:
+                            record_compression(
+                                Path(result["file_path"]),
+                                status=result["status"],
+                                mode=result["mode"],
+                                quality=quality,
+                                original_size=result["original_size"],
+                                compressed_size=result["compressed_size"],
+                                output_path=(
+                                    Path(result["output_path"])
+                                    if result["output_path"]
+                                    else None
+                                ),
+                                error=result["error"],
+                            )
+                        except Exception as hist_exc:
+                            logger.warning(f"Falha ao gravar histórico: {hist_exc}")
+
+                        total_original_size += result["original_size"]
+
+                        if result["success"]:
+                            successful += 1
+                            total_compressed_size += result["compressed_size"]
+                        else:
+                            failed += 1
+                            failed_files.append(
+                                {
+                                    "file": result["file_name"],
+                                    "error": result["error"],
+                                }
+                            )
+                            logger.error(
+                                f"Failed to compress {result['file_name']}: "
+                                f"{result['error']}"
+                            )
+
+                    except Exception as exc:
                         failed += 1
-                        failed_files.append(
-                            {"file": result["file_name"], "error": result["error"]}
+                        error_msg = (
+                            f"Unexpected error processing {pdf_file.name}: {exc}"
                         )
-                        logger.error(
-                            f"Failed to compress {result['file_name']}: {result['error']}"
-                        )
+                        failed_files.append({"file": pdf_file.name, "error": error_msg})
+                        logger.error(error_msg)
 
-                    if show_progress and progress_bar:
-                        progress_bar.update(1)
-
-                except Exception as exc:
-                    failed += 1
-                    error_msg = f"Unexpected error processing {pdf_file.name}: {exc}"
-                    failed_files.append({"file": pdf_file.name, "error": error_msg})
-                    logger.error(error_msg)
-
-                    if show_progress and progress_bar:
+                    if show_progress and progress_bar is not None:
                         progress_bar.update(1)
 
     finally:
-        if show_progress and progress_bar:
+        if show_progress and progress_bar is not None:
             progress_bar.close()
 
-    logger.info(f"Parallel compression completed in batch")
+    if discovered_count == 0:
+        logger.warning(f"No PDF files found in {input_dir}")
+        return 0, 0
+
+    if submitted_count == 0 and skipped_count:
+        logger.info("No pending PDFs to compress; all discovered files were skipped.")
+
+    logger.info(
+        f"Parallel compression completed: {submitted_count} files submitted, "
+        f"{skipped_count} skipped from history"
+    )
 
     if successful > 0:
         overall_compression = calculate_compression_ratio(
@@ -379,7 +406,7 @@ def compress_pdf_batch(
             f"({overall_compression:.1f}% reduction)"
         )
         logger.info(
-            f"⚡ Processed {len(pdf_files)} files using {max_workers} parallel workers"
+            f"⚡ Processed {submitted_count} files using {max_workers} parallel workers"
         )
 
     if failed_files:

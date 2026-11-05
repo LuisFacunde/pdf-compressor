@@ -138,6 +138,8 @@ python pdf_compressor.py --single exame.pdf exame_comprimido.pdf
 
 No processamento em lote normal, são encontrados PDFs diretamente na pasta de entrada. Com `--in-place`, a busca é recursiva e os arquivos são processados no próprio local. O modo in-place mantém o original se o resultado não for menor; a opção `--force` permite reprocessar arquivos que o histórico indica como já comprimidos.
 
+A descoberta dos PDFs e a compressão acontecem incrementalmente: o programa começa a processar enquanto percorre a pasta e mantém no máximo uma quantidade de tarefas pendentes igual ao número de processos configurado. Como o total não é conhecido antecipadamente, a barra de progresso mostra a quantidade processada e o tempo, sem percentual ou total previsto.
+
 ### Executar em uma pasta específica com `--in-place`
 
 Informe a pasta a ser pesquisada com `-i` ou `--input-dir`. A busca inclui subpastas. Nesse modo os PDFs podem ser substituídos pelos resultados comprimidos; faça uma cópia de segurança antes de executar. A opção `-o` não é necessária e é ignorada nesse modo.

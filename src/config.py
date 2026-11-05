@@ -4,7 +4,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
 INPUT_DIR = HERE / "src" / "data" / "input" / "pdfs_originais"
-OUTPUT_DIR = HERE / "src" / "data" / "output" / "pdfs_compactados"
+OUTPUT_DIR = Path(r"\\192.168.4.52\c$\exames")
 
 
 def get_ghostscript_command():
