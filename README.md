@@ -215,14 +215,27 @@ pdf-compressor/
 ├── pdf_compressor.py           # Ponto de entrada da CLI (python pdf_compressor.py)
 ├── src/
 │   ├── __init__.py
-│   ├── compressor.py            # Compressão de PDFs e processamento em lote
-│   ├── config.py                # Configurações e caminhos padrão
+│   ├── cli.py                   # CLI e composição das dependências
+│   ├── models.py                # Enums (Quality, Status, Mode) e CompressionResult
+│   ├── ports.py                 # Interfaces: CompressionEngine e HistoryRepository
+│   ├── services.py              # Casos de uso: FileCompressor e BatchCompressor
+│   ├── adapters/
+│   │   ├── ghostscript.py       # Motor de compressão (Ghostscript)
+│   │   └── sqlite_history.py    # Repositório de histórico (SQLite)
+│   ├── settings.py              # Configurações (variáveis PDF_COMPRESSOR_*)
+│   ├── logging_setup.py         # Logging com rotação (ativado pela CLI)
+│   ├── utils.py                 # Funções auxiliares de tamanho/formatação
 │   └── history.py               # Histórico SQLite
 ├── tests/
-│   ├── test_compressor.py
+│   ├── test_services.py         # Lógica de compressão com motor falso
+│   ├── test_batch.py            # Lote, paralelismo e histórico
+│   ├── test_adapters.py         # Ghostscript, SQLite e testes de integração
+│   ├── test_cli.py              # CLI e configurações
 │   └── test_history.py
 ├── logs/                        # Criado para o arquivo de log
 ├── historico/                   # Criado para o banco SQLite
+├── pyproject.toml               # Configuração do pytest
+├── .github/workflows/ci.yml     # CI: lint + testes
 ├── README.md
 └── requirements.txt
 ```
@@ -246,3 +259,8 @@ O sistema gera logs detalhados em duas saídas:
 - ⏱️ **Tempo**: Timestamp de todas as operações
 
 O histórico pode ser consultado pela opção `--history`. No modo in-place, ele também é usado para evitar o reprocessamento de arquivos que não foram modificados desde a última compressão com a mesma qualidade.
+
+
+### Configuração por variáveis de ambiente
+
+Os padrões podem ser sobrescritos sem alterar o código: `PDF_COMPRESSOR_INPUT_DIR`, `PDF_COMPRESSOR_OUTPUT_DIR`, `PDF_COMPRESSOR_HISTORY_DB`, `PDF_COMPRESSOR_LOG_FILE`, `PDF_COMPRESSOR_GS_CMD`, `PDF_COMPRESSOR_TIMEOUT` (segundos) e `PDF_COMPRESSOR_MIN_OUTPUT_SIZE` (bytes).

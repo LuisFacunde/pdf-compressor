@@ -1,13 +1,14 @@
 import sqlite3
 from pathlib import Path
 from datetime import datetime
-from .config import HISTORY_DB
+from .settings import get_settings
+from .models import Status
 from contextlib import contextmanager
 from typing import Iterator, List, Optional
 
-STATUS_COMPRESSED = "compressed"
-STATUS_KEPT_ORIGINAL = "kept_original"
-STATUS_FAILED = "failed"
+STATUS_COMPRESSED = Status.COMPRESSED.value
+STATUS_KEPT_ORIGINAL = Status.KEPT_ORIGINAL.value
+STATUS_FAILED = Status.FAILED.value
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS compressions (
@@ -32,7 +33,8 @@ CREATE INDEX IF NOT EXISTS idx_compressions_folder ON compressions(folder);
 
 
 @contextmanager
-def _connect(db_path: Path = HISTORY_DB) -> Iterator[sqlite3.Connection]:
+def _connect(db_path: Optional[Path] = None) -> Iterator[sqlite3.Connection]:
+    db_path = Path(db_path) if db_path else get_settings().history_db
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path, timeout=30)
     conn.row_factory = sqlite3.Row
@@ -44,7 +46,7 @@ def _connect(db_path: Path = HISTORY_DB) -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
-def init_db(db_path: Path = HISTORY_DB) -> None:
+def init_db(db_path: Optional[Path] = None) -> None:
     with _connect(db_path):
         pass
 
@@ -58,7 +60,7 @@ def record_compression(
     compressed_size: int = 0,
     output_path: Optional[Path] = None,
     error: Optional[str] = None,
-    db_path: Path = HISTORY_DB,
+    db_path: Optional[Path] = None,
 ) -> None:
     """Registra uma tentativa de compressão (sucesso, original mantido ou falha)."""
     file_path = Path(file_path).resolve()
@@ -100,7 +102,7 @@ def record_compression(
 
 
 def is_already_compressed(
-    file_path: Path, quality: str, db_path: Path = HISTORY_DB
+    file_path: Path, quality: str, db_path: Optional[Path] = None
 ) -> bool:
     """True se o arquivo (in-place) já foi processado com a mesma qualidade
     e não foi modificado desde então (mesmo mtime e tamanho)."""
@@ -127,7 +129,7 @@ def is_already_compressed(
 
 
 def get_history(
-    folder: Optional[str] = None, limit: int = 100, db_path: Path = HISTORY_DB
+    folder: Optional[str] = None, limit: int = 100, db_path: Optional[Path] = None
 ) -> List[sqlite3.Row]:
     """Retorna os registros mais recentes, opcionalmente filtrados por pasta."""
     query = "SELECT * FROM compressions"
