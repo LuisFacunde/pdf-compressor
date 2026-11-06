@@ -161,3 +161,32 @@ def test_history_reuses_passed_stat_and_mtime_without_extra_stat(tmp_path):
     assert is_already_compressed(
         source, "ebook", db_path=database, stat_result=stat_result
     )
+
+
+def test_already_compressed_file_copied_from_another_folder_is_detected(tmp_path):
+    server_dir = tmp_path / "server" / "1000850"
+    watch_dir = tmp_path / "watch"
+    server_dir.mkdir(parents=True)
+    watch_dir.mkdir(parents=True)
+
+    original_in_server = server_dir / "1000850-exame.pdf"
+    original_in_server.write_bytes(b"compressed-content" * 100)
+    database = tmp_path / "history.db"
+
+    record_compression(
+        original_in_server,
+        status=STATUS_COMPRESSED,
+        mode="in_place",
+        quality="prepress",
+        original_size=6956678,
+        compressed_size=original_in_server.stat().st_size,
+        db_path=database,
+    )
+
+    # Copia o arquivo já comprimido para outra pasta (como no teste de watch)
+    copied_in_watch = watch_dir / "1000850-exame.pdf"
+    copied_in_watch.write_bytes(original_in_server.read_bytes())
+
+    assert is_already_compressed(copied_in_watch, "prepress", db_path=database)
+    assert not is_already_compressed(copied_in_watch, "ebook", db_path=database)
+

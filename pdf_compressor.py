@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 from src.config import INPUT_DIR, OUTPUT_DIR
 from src.compressor import compress_pdf, compress_pdf_batch
+from src.watcher import watch_directory
 
 
 def validate_directory(path: Path, create_if_missing: bool = False) -> bool:
@@ -58,6 +59,25 @@ def main():
         "--in-place",
         action="store_true",
         help="comprimir arquivos recursivamente no mesmo local, sobrescrevendo os originais. Ignora --output-dir.",
+    )
+    batch_group.add_argument(
+        "--watch",
+        action="store_true",
+        help="monitorar continuamente a pasta (e subpastas) e comprimir novos PDFs automaticamente na própria pasta do documento (ativa --in-place).",
+    )
+    batch_group.add_argument(
+        "--settle-time",
+        type=float,
+        default=3.0,
+        metavar="SEG",
+        help="segundos que um novo PDF deve permanecer sem alterações antes de ser comprimido no modo --watch (padrão: 3.0)",
+    )
+    batch_group.add_argument(
+        "--poll-interval",
+        type=float,
+        default=5.0,
+        metavar="SEG",
+        help="intervalo em segundos entre varreduras de verificação no modo --watch (padrão: 5.0)",
     )
 
     single_group = parser.add_argument_group("arquivo único")
@@ -171,12 +191,35 @@ def main():
             return 1
 
     else:
+        if args.watch:
+            args.in_place = True
+
         if not validate_directory(args.input_dir):
             return 1
 
         if not args.in_place:
             if not validate_directory(args.output_dir, create_if_missing=True):
                 return 1
+
+        if args.watch:
+            print("👀 Modo 'Watch' (monitoramento contínuo) ativado.")
+            print(f"📁 Pasta monitorada recursivamente: {args.input_dir}")
+            print(
+                f"⏱️  Estabilização: {args.settle_time}s | "
+                f"Verificação: {args.poll_interval}s"
+            )
+            print(f"🎛️  Qualidade: {args.quality}")
+            print("Pressione Ctrl+C para encerrar.")
+            print("-" * 50)
+            watch_directory(
+                args.input_dir,
+                quality=args.quality,
+                max_workers=args.jobs,
+                settle_time=args.settle_time,
+                poll_interval=args.poll_interval,
+                force=args.force,
+            )
+            return 0
 
         if args.in_place:
             print(f"🚀 Modo 'In-Place' ativado.")

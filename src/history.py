@@ -32,6 +32,8 @@ CREATE INDEX IF NOT EXISTS idx_compressions_path ON compressions(file_path);
 CREATE INDEX IF NOT EXISTS idx_compressions_folder ON compressions(folder);
 CREATE INDEX IF NOT EXISTS idx_compressions_lookup
     ON compressions(file_path, mode, quality);
+CREATE INDEX IF NOT EXISTS idx_compressions_name_quality
+    ON compressions(file_name, quality, compressed_size);
 """
 
 _local = threading.local()
@@ -152,6 +154,27 @@ def record_compression(
         )
 
 
+def _has_ghostscript_marker(path: Path) -> bool:
+    """Verifica se o PDF já possui marcador de produção do Ghostscript nos bytes iniciais/finais."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(4096)
+            if b"Ghostscript" in head:
+                return True
+            try:
+                f.seek(0, os.SEEK_END)
+                size = f.tell()
+                if size > 4096:
+                    f.seek(max(0, size - 8192))
+                    if b"Ghostscript" in f.read(8192):
+                        return True
+            except OSError:
+                pass
+    except OSError:
+        pass
+    return False
+
+
 def is_already_compressed(
     file_path: Path,
     quality: str,
@@ -159,8 +182,9 @@ def is_already_compressed(
     stat_result: Optional[os.stat_result] = None,
 ) -> bool:
     """True se o arquivo (in-place) já foi processado com a mesma qualidade
-    e não foi modificado desde então (mesmo mtime e tamanho)."""
+    e não foi modificado desde então (no mesmo caminho ou copiado de outra pasta)."""
     resolved_file_path = _normalize_path(file_path)
+    file_name = os.path.basename(resolved_file_path)
     try:
         stat = (
             stat_result if stat_result is not None else Path(resolved_file_path).stat()
@@ -177,11 +201,33 @@ def is_already_compressed(
             (resolved_file_path, quality, STATUS_COMPRESSED, STATUS_KEPT_ORIGINAL),
         ).fetchone()
 
-    return bool(
-        row
-        and row["file_mtime_ns"] == stat.st_mtime_ns
-        and row["compressed_size"] == stat.st_size
-    )
+        if row is not None:
+            if row["compressed_size"] != stat.st_size:
+                return False
+            if row["file_mtime_ns"] == stat.st_mtime_ns:
+                return True
+            if (
+                row["file_mtime_ns"] is not None
+                and stat.st_mtime_ns < row["file_mtime_ns"]
+            ):
+                return True
+            return _has_ghostscript_marker(Path(resolved_file_path))
+
+        by_name_and_size = conn.execute(
+            """SELECT 1 FROM compressions
+               WHERE file_name = ? AND mode = 'in_place' AND quality = ?
+                 AND compressed_size = ? AND status IN (?, ?)
+               LIMIT 1""",
+            (
+                file_name,
+                quality,
+                stat.st_size,
+                STATUS_COMPRESSED,
+                STATUS_KEPT_ORIGINAL,
+            ),
+        ).fetchone()
+
+    return by_name_and_size is not None
 
 
 def get_history(
